@@ -1,0 +1,4 @@
+# Dockerfile.frontend
+FROM nginx:stable-alpine
+COPY frontend/src /usr/share/nginx/html
+EXPOSE 80

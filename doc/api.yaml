@@ -1,0 +1,22 @@
+openapi: 3.0.3
+info:
+  title: WASA Sample API
+  version: 1.0.0
+  description: Minimal OpenAPI for Homework 1 (place as **doc/api.yaml**).
+servers:
+  - url: http://localhost:8000
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
