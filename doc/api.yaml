@@ -1,9 +1,9 @@
 openapi: 3.0.3
 info:
-  title: WASAtext API
+  title: Messaging API
   version: 0.1.0
   description: |
-    Messaging API for WASAtext: login, conversations, messages, groups, and profile.
+    Messaging API for WASAText: login, conversations, messages, groups, and profile.
 
 servers:
   - url: http://localhost:8000
@@ -19,7 +19,7 @@ paths:
   /session:
     post:
       tags: [auth]
-      operationId: loginOrRegister
+      operationId: doLogin
       summary: Log in or create an account
       description: If the user does not exist, create and return an identifier; otherwise return the identifier.
       requestBody:
@@ -34,8 +34,9 @@ paths:
                   type: string
                   minLength: 3
                   maxLength: 16
-                  pattern: '^[\s\S]*$'
-                  example: Emina
+                  # Keep pattern permissive per brief addendum
+                  pattern: '^.*?$'
+                  example: Alex
       responses:
         '201':
           description: User logged in (or created) successfully
@@ -45,14 +46,16 @@ paths:
                 type: object
                 properties:
                   identifier:
+                    # can be string/int; keeping string for simplicity
                     type: string
                     example: abcdef012345
         '400':
           $ref: '#/components/responses/BadRequest'
+
   /user/username:
     post:
       tags: [users]
-      operationId: setMyUsername
+      operationId: setMyUserName
       summary: Set or update current user’s username
       requestBody:
         required: true
@@ -67,7 +70,7 @@ paths:
                   minLength: 3
                   maxLength: 16
                   pattern: '^[a-zA-Z0-9_.-]{3,16}$'
-                  example: FerolaUser
+                  example: JordanUser
       responses:
         '200':
           description: Username updated
@@ -77,6 +80,8 @@ paths:
                 $ref: '#/components/schemas/MessageOk'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /conversations:
     get:
@@ -127,6 +132,8 @@ paths:
                             type: array
                             items:
                               $ref: '#/components/schemas/Message'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -157,6 +164,8 @@ paths:
                 $ref: '#/components/schemas/Message'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -192,13 +201,15 @@ paths:
                 $ref: '#/components/schemas/Message'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
   /messages/{messageId}/reactions:
     post:
       tags: [messages]
-      operationId: addReaction
+      operationId: commentMessage
       summary: React to a message (e.g., emoji)
       parameters:
         - in: path
@@ -230,13 +241,15 @@ paths:
                     example: react_123
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
   /messages/{messageId}/reactions/{reactionId}:
     delete:
       tags: [messages]
-      operationId: removeReaction
+      operationId: uncommentMessage
       summary: Remove a reaction from a message
       parameters:
         - in: path
@@ -252,6 +265,8 @@ paths:
       responses:
         '204':
           description: Reaction removed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -269,6 +284,8 @@ paths:
       responses:
         '204':
           description: Message deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -302,6 +319,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageOk'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -323,6 +342,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MessageOk'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -349,7 +370,7 @@ paths:
                   type: string
                   minLength: 3
                   maxLength: 32
-                  example: Ferola’s gals
+                  example: jordan_friends
       responses:
         '200':
           description: Group name updated
@@ -359,6 +380,8 @@ paths:
                 $ref: '#/components/schemas/MessageOk'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -388,6 +411,8 @@ paths:
                 $ref: '#/components/schemas/MessageOk'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /groups/{conversationId}/photo:
     post:
@@ -421,6 +446,8 @@ paths:
                 $ref: '#/components/schemas/MessageOk'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -457,7 +484,7 @@ components:
       properties:
         error:
           type: string
-          example: Invalid username.
+          example: Invalid input.
     Conversation:
       type: object
       properties:
@@ -490,7 +517,7 @@ components:
           example: user123
         content:
           type: string
-          example: "yellooo"
+          example: "hey!"
         type:
           type: string
           example: text
@@ -507,7 +534,7 @@ components:
       properties:
         content:
           type: string
-          example: "yellooo"
+          example: "hey!"
         type:
           type: string
           example: text
