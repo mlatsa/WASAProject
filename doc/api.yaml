@@ -1,22 +1,513 @@
 openapi: 3.0.3
 info:
-  title: WASA Sample API
-  version: 1.0.0
-  description: Minimal OpenAPI for Homework 1 (place as **doc/api.yaml**).
+  title: WASAtext API
+  version: 0.1.0
+  description: |
+    Messaging API for WASAtext: login, conversations, messages, groups, and profile.
+
 servers:
   - url: http://localhost:8000
+
+tags:
+  - name: auth
+  - name: users
+  - name: conversations
+  - name: messages
+  - name: groups
+
 paths:
-  /health:
-    get:
-      summary: Health check
+  /session:
+    post:
+      tags: [auth]
+      operationId: loginOrRegister
+      summary: Log in or create an account
+      description: If the user does not exist, create and return an identifier; otherwise return the identifier.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 3
+                  maxLength: 16
+                  pattern: '^[\s\S]*$'
+                  example: Emina
       responses:
-        '200':
-          description: OK
+        '201':
+          description: User logged in (or created) successfully
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  status:
+                  identifier:
                     type: string
-                    example: ok
+                    example: abcdef012345
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /user/username:
+    post:
+      tags: [users]
+      operationId: setMyUsername
+      summary: Set or update current user’s username
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 3
+                  maxLength: 16
+                  pattern: '^[a-zA-Z0-9_.-]{3,16}$'
+                  example: FerolaUser
+      responses:
+        '200':
+          description: Username updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /conversations:
+    get:
+      tags: [conversations]
+      operationId: getMyConversations
+      summary: List conversations for the authenticated user
+      responses:
+        '200':
+          description: Conversations retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Conversation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /conversations/{conversationId}:
+    get:
+      tags: [conversations]
+      operationId: getConversation
+      summary: Get a specific conversation with its messages
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+          description: Conversation identifier
+      responses:
+        '200':
+          description: Conversation retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversation:
+                    allOf:
+                      - $ref: '#/components/schemas/Conversation'
+                      - type: object
+                        properties:
+                          messages:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Message'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /conversations/{conversationId}/messages:
+    post:
+      tags: [messages]
+      operationId: sendMessage
+      summary: Send a message to a conversation
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+          description: Target conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageInput'
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /messages/{messageId}/forward:
+    post:
+      tags: [messages]
+      operationId: forwardMessage
+      summary: Forward a message to another conversation
+      parameters:
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+          description: Message to forward
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [conversationId]
+              properties:
+                conversationId:
+                  type: string
+                  example: conversation456
+      responses:
+        '200':
+          description: Forwarded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /messages/{messageId}/reactions:
+    post:
+      tags: [messages]
+      operationId: addReaction
+      summary: React to a message (e.g., emoji)
+      parameters:
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reaction]
+              properties:
+                reaction:
+                  type: string
+                  example: 👍
+      responses:
+        '200':
+          description: Reaction added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reactionId:
+                    type: string
+                    example: react_123
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /messages/{messageId}/reactions/{reactionId}:
+    delete:
+      tags: [messages]
+      operationId: removeReaction
+      summary: Remove a reaction from a message
+      parameters:
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: reactionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Reaction removed
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /messages/{messageId}:
+    delete:
+      tags: [messages]
+      operationId: deleteMessage
+      summary: Delete a message
+      parameters:
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Message deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /groups/{conversationId}/members:
+    post:
+      tags: [groups]
+      operationId: addToGroup
+      summary: Add a user to a group conversation
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: string
+                  description: User ID to add
+                  example: user123
+      responses:
+        '200':
+          description: User added to group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageOk'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /groups/{conversationId}/leave:
+    post:
+      tags: [groups]
+      operationId: leaveGroup
+      summary: Leave a group conversation
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Left the group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageOk'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /groups/{conversationId}/name:
+    post:
+      tags: [groups]
+      operationId: setGroupName
+      summary: Set or update group name
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 3
+                  maxLength: 32
+                  example: Ferola’s gals
+      responses:
+        '200':
+          description: Group name updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /user/photo:
+    post:
+      tags: [users]
+      operationId: setMyPhoto
+      summary: Set or update user profile photo (by URL)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mediaUrl]
+              properties:
+                mediaUrl:
+                  type: string
+                  format: uri
+                  example: https://example.com/media/photo123.jpg
+      responses:
+        '200':
+          description: User photo updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /groups/{conversationId}/photo:
+    post:
+      tags: [groups]
+      operationId: setGroupPhoto
+      summary: Set or update group photo (by URL)
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mediaUrl]
+              properties:
+                mediaUrl:
+                  type: string
+                  format: uri
+                  example: https://example.com/media/group123.jpg
+      responses:
+        '200':
+          description: Group photo updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageOk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  responses:
+    BadRequest:
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    MessageOk:
+      type: object
+      properties:
+        message:
+          type: string
+          example: OK
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Invalid username.
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          example: conversation123
+        participants:
+          type: array
+          items:
+            type: string
+          example: [user123, user456]
+        lastMessage:
+          type: string
+          example: "hello there"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-11-10T15:30:00Z"
+    Message:
+      type: object
+      properties:
+        messageId:
+          type: string
+          example: message123
+        conversationId:
+          type: string
+          example: conversation123
+        sender:
+          type: string
+          example: user123
+        content:
+          type: string
+          example: "yellooo"
+        type:
+          type: string
+          example: text
+        status:
+          type: string
+          example: delivered
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-11-10T15:30:00Z"
+    SendMessageInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          example: "yellooo"
+        type:
+          type: string
+          example: text
