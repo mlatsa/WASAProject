@@ -1,0 +1,645 @@
+# todo : check responses for all objects, check the comments and check the examples
+openapi: 3.0.0
+servers:
+  - url: "http://localhost:3000"
+info:
+  title: WASAText API 
+  description: |
+    This API is for a messaging and communication app called WASAtext 
+  version: 0.0.1 # essential 
+
+paths:
+
+  #DO LOGIN 
+  /session:
+   post:
+      tags: ["login"]
+      summary: logs in the user 
+      description: |
+        If the user doesnt exits, they will create an account and log in. If the user exits, the identifier is returned. 
+      operationId: doLogin
+      requestBody: 
+        description: User Login details
+        content: 
+          application/json: 
+            schema: 
+              type: object 
+              properties:
+                name: 
+                  type: string
+                  example: Emina 
+                  pattern: '^.*?$'
+                  minLength: 3
+                  maxLength: 16
+        required: true
+      
+      responses:
+        "201":
+          description: User log-in action successful 
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: 
+                  identifier: 
+                  type: string
+                  example: "abcdef012345"
+  
+
+  #SET MY USERNAME 
+  /user/username: 
+      post:
+      tags: ["user"]
+      summary: users sets or updates the name
+      description: |
+        User sets up his name. 
+      operationId: setMyUserName
+      requestBody: 
+        description: User name 
+        content: 
+          application/json: 
+            schema: 
+              type: object 
+              properties:
+                name: 
+                  type: string
+                  example: FerolaUser 
+                  pattern: '^[a-zA-Z0-9_.-]{3,16}$' # DO I NEED THIS 
+                  minLength: 3
+                  maxLength: 16
+        required: true
+      responses:
+        "200":
+          description: User name set up or updated succesfully 
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: 
+                  message:  
+                    type: string
+                    example: "Username updated." 
+        "400": 
+          description: Username invalid 
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                properties: 
+                error: 
+                 type: string
+                 example: "Invalid username."
+
+
+ #GET MY CONVERSATIONS 
+  /conversations: 
+      get: 
+        tags: ["conversation"]
+        summary: Recover users conversations
+        description: |
+          Retrieves all conversations associated with tge logged-in user. 
+        operationId: getMyConversations 
+        responses: 
+          "200": 
+            description: Conversations successfully retreived 
+            content: 
+              application/json: 
+                schema: # WHAT DID I WANT HERE 
+                  type: object
+                  properties: 
+                    conversations: 
+                      type: array
+                      convo: 
+                        type: object
+                        properties: 
+                          id: 
+                            type: string
+                            example: "conversation123"
+                          participants: 
+                            type: array
+                            items: 
+                              type: string
+                              example: "user123"
+                          lastMessage: 
+                            type: string
+                            example: "yellooo bushters"
+                          timestamp: 
+                            type: string 
+                            format: date-time
+                            example: "2024-11-10T15:30:00Z"
+                          status: # MOVE THIS TO MESSAGES ???
+                            type: string
+                            example: "seen, read? ignored"
+          "401":
+            description: Error - user not logged in 
+            content: 
+              application/json: 
+                schema:
+                  type: object
+                  properties: 
+                    error: 
+                    type: string
+                    example: "User not authorized"
+
+ #GET CONVERSATION                    
+  /conversations/conversation:  # add the messages 
+      get: 
+        tags: ["conversations"]
+        summary: Recover a users specific conversation 
+        description: |
+          Takes the specific conversation between the logged in user and another one. Specific chat 
+        operationId: getConversation 
+        # add parameters do i need parameters here ?
+        parameters: 
+          - name: conversationID
+            in: path 
+            required: True
+            description: 
+            schema: 
+              type: string
+        responses: 
+          "200":
+            description: Conversation succesfully retrieved 
+            content: 
+              application/json: 
+                schema: 
+                  type: object
+                  properties: 
+                    conversation: 
+                      type: object 
+                      properties: 
+                       conversationid: # check how i have conversationId defined 
+                         type: string
+                         example: "conversation123"
+                       participants:
+                         type: string
+                         example: "user456"
+                       messages:  #should be the whole messages history - CHANGE THIS 
+                         type: array
+                         items: 
+                          type: object
+                          example: "yellooo bushters"
+                          properties: 
+                            messageId: 
+                              type: string
+                              example: "helooo"
+                            sender: 
+                              type: string
+                              example: "me"
+                            content: 
+                              type: string
+                              example: "hiiiii"
+                            timestamp: 
+                              type: string 
+                              format: date-time
+                              example: "2024-11-10T15:30:00Z"
+                            status: 
+                              type: string
+                              example: "seen, read? ignored"
+              "404": 
+            description: conversation not found 
+
+ #SENDMESSAGE 
+  /conversations/message: # an action perfromed within a conversation 
+    post: 
+      tags: ["message"]
+      summary: Send a message in a conversation 
+      description: |
+        Send a message in a specific conversation 
+      operationId: sendMessage
+      # path parameter definition - essential, defines how a client specifies which resource or data the API should work with. 
+      parameter: # litst all parameters accepted by the endpoint 
+        - in: path  # specifies this parameter is in the url path, ensures the client provides the correct convesartionID whenever the endpoint is called 
+          name: conversationId # ids which convo we are trying to send a message to 
+          schema: 
+           type: string # defines the type of the parameter (e.g string)
+        required: true
+        description: the ID of the conversation to send the message to 
+      
+      requestBody: 
+        description: Message 
+        #required: true
+        content: 
+          application/json: 
+            schema: 
+              type: object
+              properties:
+                conversationId: 
+                  type: string
+                  example: "Frisky"
+                content: # the actual message 
+                  type: string
+                  example: "yellooo"
+                  description: Text content of the message 
+                type: # what the message is, text, GIF, photo, view-once photo.. 
+                  type: string
+                  example: "text"
+                  description: Type of the message (e.g., "text", "photo"). 
+                status: 
+                  type: string
+                  example: "seen, delivered, sent, ignored"
+        required: True
+      responses: 
+        "201": 
+          description: Sent successfully. 
+          content: 
+            application/json: 
+              schema: # refering to the structure of the response data 
+                type: object
+                properties: 
+                  messageId: 
+                    type: string
+                    example: "message123"
+                  timestamp: # do i need all of this 
+                    type: string 
+                    format: date-time
+                    example: "2024-11-10T15:30:00Z"
+                  conversationId: 
+                    type: string
+                    example: "conversation456"
+                  content: 
+                    type: string
+                    example: "yellooo kafica"
+                  type: 
+                    type: string
+                    example: "text"
+                  sender: # object containing details about the sender 
+                    type: object
+                    properties: 
+                      id: 
+                        type: string
+                        example: "user123"
+                      username: 
+                        type: string  
+                        example: "ferola babes"
+         "400": 
+          description: Invalid input 
+         "401":
+          description: User is unauthorized (blocked,muted...)
+         "404":
+          description: The conversationID does not exist             
+                    
+
+ #FORWARD MESSAGE -- check this 
+  /conversations/message: # an action perfromed within a conversation 
+    post: 
+      tags: ["message"]
+      summary: forward a message 
+      description: |
+        Forward a message to a specific conversation 
+      operationId: forwardMessage
+      # path parameter definition - essential, defines how a client specifies which resource or data the API should work with. 
+      parameters: # litst all parameters accepted by the endpoint 
+        - in: path  # specifies this parameter is in the url path, ensures the client provides the correct convesartionID whenever the endpoint is called 
+          name: messageId # ids which convo we are trying to send a message to 
+          required: True
+          description: ID of message we are forwarding 
+          schema: 
+           type: string # defines the type of the parameter (e.g string)
+      requestBody:
+      description: Reciever of the forwarded message  
+        content: 
+          application/json: 
+            schema: 
+              type: object
+              properties:
+                conversationId: 
+                  type: string
+                  example: "Convo 123"
+                messageId: # do i need the messageiId
+                  type: string
+                  example: "message123"
+                
+                # content: # the actual message --
+                #   type: string
+                #   example: "yellooo"
+                #   description: Text content of the message 
+                # type: # what the message is, text, GIF, photo, view-once photo.. 
+                #   type: string
+                #   example: "text"
+                #   description: Type of the message (e.g., "text", "photo"). 
+      responses: 
+        "200": 
+          description: Forwarded successfully. 
+          content: 
+            application/json: 
+              schema: # refering to the structure of the response data 
+                type: object
+                properties: 
+                  messageId: 
+                    type: string
+                    example: "message123"
+                  # timestamp: 
+                  #   type: string 
+                  #   format: date-time
+                  #   example: "2024-11-10T15:30:00Z"
+                  # conversationId: 
+                  #   type: string
+                  #   example: "convesration456"
+                  # content: 
+                  #   type: string
+                  #   example: "yelooo kafica"
+                  # type: 
+                  #   type: string
+                  #   example: "text"
+                  # sender: # object containing details about the sender 
+                  #   type: object
+                  #   properties: 
+                  #     id: 
+                  #       type: string
+                  #       example: "user123"
+                  #     username: 
+                  #       type: string
+                  #      example: "ferola babes"
+         "400": 
+          description: Invalid input 
+         "401":
+          description: User is unauthorized (blocked,muted...)
+         "404":
+          description: The conversationID does not exist 
+
+
+#COMMENT MESSAGE 
+  /conversations/message: 
+    post: 
+      tags: ["messages"] # do i need comment?
+      summary: Comment message
+      description: |
+        It is technically a message reaction, you can react with an emoji. 
+      operationID: commentMessage
+      parameters:
+        - name: messageId
+          in: path
+          required: True 
+          description: MessageID of the one we want to comment 
+          schema: 
+            type: string # defines the type of the parameter (e.g string), no required field -- technically an optional thing 
+        requestBody: 
+          description: Message comment 
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                properties:
+                  content: 
+                    type: string
+                    example: "bla bla "
+                  message: 
+                    type: string
+                    example: "meet you there "
+                  comment: # the actual message --
+                    type: string
+                    example: "like"
+                    description: The comment to the message 
+                  type: # what the message is, text, GIF, photo, view-once photo.. 
+                    type: string
+                    example: "text"
+          required: True 
+        responses: 
+          "200": 
+            description: Comment added
+            content: 
+              application/json: 
+                schema: 
+                  type: object
+                  properties: 
+                    commentId: 
+                      type: string
+                      example: "conv5"
+          
+#UNCOMMENT MESSAGE -- delete an object??
+  /conversations/message: 
+    delete: 
+      tags: ["messages"]
+      summary: "Uncomment a message" 
+      description: |
+        It is technically a message reaction, you can react with an emoji. 
+      operationID: uncommentMessage
+      parameters: 
+        - name: 
+          in: path
+          required: true
+          description: The message id 
+          schema: 
+            type: string
+      responses: 
+        "204": 
+          description: " Message comment deleted successfully"
+
+
+  # DELETE MESSAGE 
+  /conversation/message: 
+    delete: 
+      tags: ['messages']
+      summary: delete a message
+      description: delete a specific message 
+      operationID: deleteMessage
+      parameters: 
+        - name: messageId 
+          in: path  # specifies this parameter is in the url path, ensures the client provides the correct convesartionID whenever the endpoint is called 
+          required: True
+          description: the messageId we want to delete 
+          schema: 
+            type: string # defines the type of the parameter (e.g string), no required field -- technically an optional thing 
+      responses: 
+        "204": 
+          description: Message deleted successfully 
+
+  # ADDTOGROUP
+  /conversations/group:
+    post: 
+      tags: ["groups"]
+      summary: adds a user to the group 
+      description: |
+        add a user to an existing group 
+      operationId: addToGroup
+      # path parameter definition - essential, defines how a client specifies which resource or data the API should work with. 
+      parameter: # list all parameters accepted by the endpoint 
+        - in: path  # specifies this parameter is in the url path, ensures the client provides the correct convesartionID whenever the endpoint is called 
+          name: groupId # ids of the user we are adding to the group 
+          required: True
+           description: the ID of the user to add to the group, the user we are adding 
+           schema: 
+            type: string # defines the type of the parameter (e.g string)
+       
+        required: true
+        content: 
+          application/json: 
+            schema: 
+              type: object
+              properties:
+                Id: # which user we are adding 
+                  type: string
+                  example: "user123"
+                conversationId: # to what group we are adding the user  --
+                  type: string
+                  example: "conversation456"
+                
+  ## ADD RESPONSES FOR ALL OF THE ABOVE 
+
+  #LEAVE GROUP 
+  /conversations/group: 
+    post: 
+      tags: ["leave group"]
+      summary: leave the group 
+      description: |
+        The user can also leave the group, just he was added 
+      operationId: leaveGroup
+      requestBody: 
+        description: Leave the group 
+      parameter: # list all parameters accepted by the endpoint 
+        -in: path  # specifies this parameter is in the url path, ensures the client provides the correct convesartionID whenever the endpoint is called 
+        name: id # ids of the user we are adding to the group 
+        schema: 
+          type: string # defines the type of the parameter (e.g string)
+        content: 
+          application/json: 
+            schema: 
+              type: object
+              properties:
+                conversationId: # which group, that is what conversation we are leaving   --
+                  type: string
+                  example: "conversation456"
+                
+  # SET MY GROUP NAME 
+  /conversations/group/groupname:
+   post:
+      tags: ["groupname"]
+      summary: users sets or updates the groupname
+      description: |
+        User sets up the group name 
+      operationId: setGroupName
+      requestBody: 
+        description: Setup the group name 
+         parameter: # list all parameters accepted by the endpoint 
+        -in: path  # specifies this parameter is in the url path, ensures the client provides the correct convesartionID whenever the endpoint is called 
+        name: conversationid # 
+        schema: 
+          type: string
+        content: 
+          application/json: 
+            schema: 
+              type: object 
+              properties:
+                name: 
+                  type: string
+                  example: Ferolas gals
+                  pattern: '^[a-zA-Z0-9_.-]{3,16}$'
+                  minLength: 3
+                  maxLength: 16
+        required: true
+      responses:
+        "200":
+          description: Group name set up or updated succesfully 
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: 
+                  message:  
+                    type: string
+                    example: "Group updated." 
+        "400": 
+          description: Group name invalid 
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                properties: 
+                error: 
+                type: string
+                example: "Invalid group name ."
+
+  # SET MY PHOTO 
+  /user/userPhoto: 
+      post:
+      tags: ["userPhoto"]
+      summary: users sets or updates their photo 
+      description: |
+        User sets up his user photo. 
+      operationId: setMy
+      requestBody: 
+        description: User photo 
+        content: 
+          application/json: 
+            schema: 
+              type: object 
+              properties:
+                photo: 
+                  mediaUrl:
+                    type: string
+                    format: uri
+                    example: "https://example.com/media/photo123.jpg"
+                    description: URL of the media, if the message contains an image or other file.
+      responses:
+        "200":
+          description: User photo set up or updated succesfully 
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: 
+                  message:  
+                    type: string
+                    example: "User photo updated." 
+        "400": 
+          description: User photo invalid or upload failed 
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                properties: 
+                error: 
+                  type: string
+                  example: "Invalid username."
+
+  # SET GROUP PHOTO 
+  /conversations/group/groupPhoto: 
+      post:
+      tags: ["groupPhoto"]
+      summary: users sets or updates  group photo 
+      description: |
+        User sets up group photo. 
+      operationId: setGroupPhoto 
+      parameter: # litst all parameters accepted by the endpoint 
+        -in: path  # specifies this parameter is in the url path, ensures the client provides the correct convesartionID whenever the endpoint is called 
+        name: conversationId # ids which convo we are trying to send a message to 
+        schema: 
+          type: string # defines the type of the parameter (e.g string)
+        required: true
+        description: the ID of the conversation to forward the message to 
+      requestBody: 
+        description: Group photo 
+        content: 
+          application/json: 
+            schema: 
+              type: object 
+              properties:
+                photo: 
+                  mediaUrl:
+                    type: string
+                    format: uri
+                    example: "https://example.com/media/photo123.jpg"
+                    description: URL of the media, if the message contains an image or other file.
+      responses:
+        "200":
+          description: Group photo set up or updated succesfully 
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: 
+                  message:  
+                    type: string
+                    example: "Group photo updated." 
+        "400": 
+          description: Group photo invalid or upload failed 
+          content: 
+            application/json: 
+              schema: 
+                type: object
+                properties: 
+                error: 
+                  type: string
+                  example: "Invalid username
+x
