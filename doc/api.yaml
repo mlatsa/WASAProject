@@ -2,712 +2,352 @@ openapi: 3.0.3
 info:
   title: Messaging API
   version: 0.1.0
-  description: Messaging API for WASAText providing login, conversations, messages, reactions, groups, and profile management.
+  description: Messaging API for WASAText providing login, conversations, messages, and health checks.
 servers:
   - url: http://localhost:3000
 tags:
+  - name: health
+    description: Service health checks.
   - name: auth
-  - name: users
+    description: Authentication and session management.
   - name: conversations
+    description: Conversation listing and retrieval.
   - name: messages
-  - name: groups
+    description: Message creation within a conversation.
 security:
   - bearerAuth: []
 paths:
-  /health:
+  /liveness:
     get:
-      tags: [auth]
-      summary: Health check
-      description: Returns a simple status payload to verify the service is running.
-      security: []
+      tags: [health]
+      summary: Liveness probe
+      description: Returns the current liveness state of the API.
+      operationId: getLiveness
       responses:
-        '200':
-          description: Service is healthy
+        "200":
+          description: Service is live.
           content:
             application/json:
               schema:
                 type: object
-                description: Health status payload.
+                required: [status]
                 properties:
                   status:
                     type: string
-                    description: Status string.
-                    example: ok
+                    description: Liveness status.
+                    enum: [ok]
   /session:
     post:
       tags: [auth]
-      operationId: doLogin
-      summary: Log in or create an account
-      description: If the user already exists, returns the same identifier; otherwise creates the user and returns a new identifier.
-      security: []
+      summary: Create a session
+      description: Creates a new in-memory session for the provided user name and returns an identifier to be used as a Bearer token.
+      operationId: createSession
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginBody'
+              $ref: "#/components/schemas/LoginRequest"
       responses:
-        '201':
-          description: User logged in or created successfully
+        "201":
+          description: Session created.
           content:
             application/json:
               schema:
-                type: object
-                description: Identifier payload used as Bearer token.
-                properties:
-                  identifier:
-                    type: string
-                    description: Opaque identifier to use as Bearer token.
-                    pattern: '^[A-Za-z0-9._-]{6,128}$'
-                    minLength: 6
-                    maxLength: 128
-                    example: abcdef012345
-        '400':
-          $ref: '#/components/responses/BadRequest'
-  /user/username:
-    post:
-      tags: [users]
-      operationId: setMyUserName
-      summary: Set or update current user’s username
-      description: Updates the username for the authenticated user if it is not already taken.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetNameBody'
-      responses:
-        '200':
-          description: Username updated
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: Invalid input.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MessageOk'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/Error"
   /conversations:
     get:
       tags: [conversations]
-      operationId: getMyConversations
-      summary: List conversations for the authenticated user
-      description: Returns all conversations where the current user is a participant.
+      summary: List conversations
+      description: Returns the list of conversations visible to the authenticated user.
+      operationId: listConversations
+      security:
+        - bearerAuth: []
       responses:
-        '200':
-          description: Conversations retrieved
+        "200":
+          description: Conversations retrieved.
           content:
             application/json:
               schema:
                 type: object
-                description: Wrapper object containing the list of conversations.
+                required: [conversations]
                 properties:
                   conversations:
                     type: array
-                    description: Conversations that involve the current user.
+                    description: Conversation summaries.
                     minItems: 0
-                    maxItems: 1000
+                    maxItems: 200
                     items:
-                      $ref: '#/components/schemas/Conversation'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-  /conversations/{conversationId}:
+                      $ref: "#/components/schemas/ConversationSummary"
+        "401":
+          description: Missing or invalid Bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /conversations/{id}:
     get:
       tags: [conversations]
+      summary: Get a conversation
+      description: Returns a conversation with its messages.
       operationId: getConversation
-      summary: Get a specific conversation with its messages
-      description: Returns the conversation metadata and current message history if the user participates in it.
+      security:
+        - bearerAuth: []
       parameters:
-        - in: path
-          name: conversationId
+        - name: id
+          in: path
           required: true
+          description: Conversation identifier.
           schema:
             type: string
-            description: Conversation identifier.
-            pattern: '^[A-Za-z0-9._-]{3,64}$'
-            minLength: 3
+            minLength: 1
             maxLength: 64
+            pattern: "^[A-Za-z0-9_.-]{1,64}$"
       responses:
-        '200':
-          description: Conversation retrieved
+        "200":
+          description: Conversation retrieved.
           content:
             application/json:
               schema:
                 type: object
-                description: Conversation with message history.
+                required: [conversation]
                 properties:
                   conversation:
-                    allOf:
-                      - $ref: '#/components/schemas/Conversation'
-                      - type: object
-                        properties:
-                          messages:
-                            type: array
-                            description: Messages currently stored in the conversation.
-                            minItems: 0
-                            maxItems: 10000
-                            items:
-                              $ref: '#/components/schemas/Message'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /conversations/{conversationId}/messages:
+                    $ref: "#/components/schemas/Conversation"
+        "401":
+          description: Missing or invalid Bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Conversation not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /conversations/{id}/messages:
     post:
       tags: [messages]
+      summary: Send a message
+      description: Appends a new message to the given conversation.
       operationId: sendMessage
-      summary: Send a message to a conversation
-      description: Appends a new message to the target conversation. If the conversation does not exist, the server may create it with the sender as a participant.
+      security:
+        - bearerAuth: []
       parameters:
-        - in: path
-          name: conversationId
+        - name: id
+          in: path
           required: true
+          description: Conversation identifier.
           schema:
             type: string
-            description: Target conversation identifier.
-            pattern: '^[A-Za-z0-9._-]{3,64}$'
-            minLength: 3
+            minLength: 1
             maxLength: 64
+            pattern: "^[A-Za-z0-9_.-]{1,64}$"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SendMessageInput'
+              $ref: "#/components/schemas/SendMessageRequest"
       responses:
-        '201':
-          description: Message sent
+        "201":
+          description: Message created.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Message'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /messages/{messageId}/forward:
-    post:
-      tags: [messages]
-      operationId: forwardMessage
-      summary: Forward a message to another conversation
-      description: Copies the content of an existing message to the specified destination conversation.
-      parameters:
-        - in: path
-          name: messageId
-          required: true
-          schema:
-            type: string
-            description: Source message identifier.
-            pattern: '^[A-Za-z0-9._-]{3,64}$'
-            minLength: 3
-            maxLength: 64
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ForwardBody'
-      responses:
-        '200':
-          description: Message forwarded
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: Invalid message body.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Message'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /messages/{messageId}/reactions:
-    post:
-      tags: [messages]
-      operationId: commentMessage
-      summary: Add a reaction to a message
-      description: Adds a reaction to the given message and returns the reaction identifier.
-      parameters:
-        - in: path
-          name: messageId
-          required: true
-          schema:
-            type: string
-            description: Message identifier to react to.
-            pattern: '^[A-Za-z0-9._-]{3,64}$'
-            minLength: 3
-            maxLength: 64
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ReactionBody'
-      responses:
-        '200':
-          description: Reaction added
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing or invalid Bearer token.
           content:
             application/json:
               schema:
-                type: object
-                description: Reaction creation payload.
-                properties:
-                  reactionId:
-                    type: string
-                    description: Newly created reaction identifier.
-                    pattern: '^[A-Za-z0-9._-]{3,64}$'
-                    minLength: 3
-                    maxLength: 64
-                    example: react_123abc
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /messages/{messageId}/reactions/{reactionId}:
-    delete:
-      tags: [messages]
-      operationId: uncommentMessage
-      summary: Remove a reaction from a message
-      description: Deletes the specified reaction from the given message.
-      parameters:
-        - in: path
-          name: messageId
-          required: true
-          schema:
-            type: string
-            description: Message identifier.
-            pattern: '^[A-Za-z0-9._-]{3,64}$'
-            minLength: 3
-            maxLength: 64
-        - in: path
-          name: reactionId
-          required: true
-          schema:
-            type: string
-            description: Reaction identifier to remove.
-            pattern: '^[A-Za-z0-9._-]{3,64}$'
-            minLength: 3
-            maxLength: 64
-      responses:
-        '204':
-          description: Reaction removed
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /messages/{messageId}:
-    delete:
-      tags: [messages]
-      operationId: deleteMessage
-      summary: Delete a message
-      description: Removes the specified message if it exists and the user has permission.
-      parameters:
-        - in: path
-          name: messageId
-          required: true
-          schema:
-            type: string
-            description: Message identifier to delete.
-            pattern: '^[A-Za-z0-9._-]{3,64}$'
-            minLength: 3
-            maxLength: 64
-      responses:
-        '204':
-          description: Message deleted
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /groups/{conversationId}/members:
-    post:
-      tags: [groups]
-      operationId: addToGroup
-      summary: Add a user to a group conversation
-      description: Adds the specified user identifier to the given conversation if not already a participant.
-      parameters:
-        - in: path
-          name: conversationId
-          required: true
-          schema:
-            type: string
-            description: Conversation identifier.
-            pattern: '^[A-Za-z0-9._-]{3,64}$'
-            minLength: 3
-            maxLength: 64
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GroupAddBody'
-      responses:
-        '200':
-          description: User added to group
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MessageOk'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /groups/{conversationId}/leave:
-    post:
-      tags: [groups]
-      operationId: leaveGroup
-      summary: Leave a group conversation
-      description: Removes the current user from the specified conversation.
-      parameters:
-        - in: path
-          name: conversationId
-          required: true
-          schema:
-            type: string
-            description: Conversation identifier.
-            pattern: '^[A-Za-z0-9._-]{3,64}$'
-            minLength: 3
-            maxLength: 64
-      responses:
-        '200':
-          description: Left the group
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MessageOk'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /groups/{conversationId}/name:
-    post:
-      tags: [groups]
-      operationId: setGroupName
-      summary: Set or update group name
-      description: Updates the human-readable name of the specified conversation.
-      parameters:
-        - in: path
-          name: conversationId
-          required: true
-          schema:
-            type: string
-            description: Conversation identifier.
-            pattern: '^[A-Za-z0-9._-]{3,64}$'
-            minLength: 3
-            maxLength: 64
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GroupNameBody'
-      responses:
-        '200':
-          description: Group name updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MessageOk'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /user/photo:
-    post:
-      tags: [users]
-      operationId: setMyPhoto
-      summary: Set or update user profile photo
-      description: Sets the profile photo by providing a public media URL.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PhotoBody'
-      responses:
-        '200':
-          description: User photo updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MessageOk'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-  /groups/{conversationId}/photo:
-    post:
-      tags: [groups]
-      operationId: setGroupPhoto
-      summary: Set or update group photo
-      description: Sets the group conversation photo by providing a public media URL.
-      parameters:
-        - in: path
-          name: conversationId
-          required: true
-          schema:
-            type: string
-            description: Conversation identifier.
-            pattern: '^[A-Za-z0-9._-]{3,64}$'
-            minLength: 3
-            maxLength: 64
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PhotoBody'
-      responses:
-        '200':
-          description: Group photo updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MessageOk'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/Error"
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: opaque
-  responses:
-    BadRequest:
-      description: Invalid input
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    Unauthorized:
-      description: Unauthorized
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    NotFound:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+      bearerFormat: UUID
   schemas:
-    LoginBody:
+    LoginRequest:
       type: object
-      description: Login payload with the requested display name.
       required: [name]
+      description: Request body for creating a session.
       properties:
         name:
           type: string
-          description: Display name for the user account.
-          pattern: '^.*?$'
+          description: Display name for the session.
           minLength: 3
-          maxLength: 16
-          example: Alex
-    SetNameBody:
+          maxLength: 50
+          pattern: "^[A-Za-z0-9 _.-]{3,50}$"
+    LoginResponse:
       type: object
-      description: Payload to update the current user’s username.
-      required: [name]
+      required: [identifier, name]
+      description: Session creation response.
       properties:
+        identifier:
+          type: string
+          description: Bearer token to be used in Authorization header.
+          minLength: 8
+          maxLength: 64
+          pattern: "^[A-Za-z0-9-]{8,64}$"
         name:
           type: string
-          description: New username; must be unique.
-          pattern: '^[a-zA-Z0-9_.-]{3,16}$'
+          description: Echoed display name.
           minLength: 3
-          maxLength: 16
-          example: JordanUser
-    ForwardBody:
+          maxLength: 50
+          pattern: "^[A-Za-z0-9 _.-]{3,50}$"
+    ConversationSummary:
       type: object
-      description: Destination conversation for forwarding a message.
-      required: [conversationId]
-      properties:
-        conversationId:
-          type: string
-          description: Conversation identifier to which the message will be forwarded.
-          pattern: '^[A-Za-z0-9._-]{3,64}$'
-          minLength: 3
-          maxLength: 64
-          example: conversation456
-    ReactionBody:
-      type: object
-      description: Reaction to attach to a message.
-      required: [reaction]
-      properties:
-        reaction:
-          type: string
-          description: Reaction text or emoji.
-          minLength: 1
-          maxLength: 64
-          example: 👍
-    PhotoBody:
-      type: object
-      description: Photo reference to set on a user or group.
-      required: [mediaUrl]
-      properties:
-        mediaUrl:
-          type: string
-          format: uri
-          description: Public URL of the image to use.
-          minLength: 10
-          maxLength: 2048
-          example: https://example.com/media/photo123.jpg
-    GroupAddBody:
-      type: object
-      description: Payload to add a user to a group conversation.
-      required: [id]
+      description: Summary of a conversation.
+      required: [id, participants, lastMessage, timestamp]
       properties:
         id:
           type: string
-          description: Identifier of the user to add.
-          pattern: '^[A-Za-z0-9._-]{3,64}$'
-          minLength: 3
-          maxLength: 64
-          example: user123
-    GroupNameBody:
-      type: object
-      description: Payload to update the name of a group conversation.
-      required: [name]
-      properties:
-        name:
-          type: string
-          description: New group display name.
-          minLength: 3
-          maxLength: 32
-          example: jordan_friends
-    MessageOk:
-      type: object
-      description: Standard success payload.
-      properties:
-        message:
-          type: string
-          description: Status message.
+          description: Conversation identifier.
           minLength: 1
-          maxLength: 256
-          example: OK
-    Error:
-      type: object
-      description: Standard error payload.
-      properties:
-        error:
-          type: string
-          description: Human-readable error description.
-          minLength: 1
-          maxLength: 512
-          example: Invalid input.
-    Conversation:
-      type: object
-      description: A chat conversation thread.
-      properties:
-        id:
-          type: string
-          description: Unique conversation identifier.
-          pattern: '^[A-Za-z0-9._-]{3,64}$'
-          minLength: 3
           maxLength: 64
-          example: conversation123
+          pattern: "^[A-Za-z0-9_.-]{1,64}$"
         participants:
           type: array
-          description: List of participant user identifiers.
+          description: User names participating in the conversation.
           minItems: 1
-          maxItems: 100
+          maxItems: 50
           items:
             type: string
-            description: User identifier.
-            pattern: '^[A-Za-z0-9._-]{3,64}$'
-            minLength: 3
-            maxLength: 64
-          example: [user123, user456]
+            minLength: 1
+            maxLength: 50
+            pattern: "^[A-Za-z0-9 _.-]{1,50}$"
         lastMessage:
           type: string
-          description: Content of the last message in this conversation.
-          minLength: 1
-          maxLength: 4096
-          example: hello there
+          description: Last message preview.
+          minLength: 0
+          maxLength: 500
         timestamp:
           type: string
           format: date-time
-          description: ISO 8601 timestamp of the last activity on this conversation.
-          example: '2024-11-10T15:30:00Z'
+          description: Last update timestamp (UTC).
         name:
           type: string
-          description: Display name of the group conversation when applicable.
-          minLength: 1
-          maxLength: 32
-          example: jordan_friends
+          description: Optional display name.
+          minLength: 0
+          maxLength: 100
         photo:
           type: string
-          format: uri
-          description: Public URL of the group photo when applicable.
-          minLength: 10
-          maxLength: 2048
-          example: https://example.com/media/group123.jpg
+          description: Optional photo URL.
+          minLength: 0
+          maxLength: 200
+    Conversation:
+      type: object
+      description: Conversation with messages.
+      required: [id, participants, lastMessage, timestamp, messages]
+      properties:
+        id:
+          type: string
+          description: Conversation identifier.
+          minLength: 1
+          maxLength: 64
+          pattern: "^[A-Za-z0-9_.-]{1,64}$"
+        participants:
+          type: array
+          description: User names participating in the conversation.
+          minItems: 1
+          maxItems: 50
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+            pattern: "^[A-Za-z0-9 _.-]{1,50}$"
+        lastMessage:
+          type: string
+          description: Last message preview.
+          minLength: 0
+          maxLength: 500
+        timestamp:
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC).
+        messages:
+          type: array
+          description: Messages in the conversation ordered by time.
+          minItems: 0
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/Message"
     Message:
       type: object
-      description: A single message sent to a conversation.
+      description: A message within a conversation.
+      required: [messageId, conversationId, sender, content, type, status, timestamp]
       properties:
         messageId:
           type: string
-          description: Unique message identifier.
-          pattern: '^[A-Za-z0-9._-]{3,64}$'
-          minLength: 3
+          description: Server-generated message identifier (UUID).
+          minLength: 8
           maxLength: 64
-          example: message123
+          pattern: "^[A-Za-z0-9-]{8,64}$"
         conversationId:
           type: string
-          description: Identifier of the conversation this message belongs to.
-          pattern: '^[A-Za-z0-9._-]{3,64}$'
-          minLength: 3
+          description: Conversation identifier.
+          minLength: 1
           maxLength: 64
-          example: conversation123
+          pattern: "^[A-Za-z0-9_.-]{1,64}$"
         sender:
           type: string
-          description: Identifier of the sender (user).
-          pattern: '^[A-Za-z0-9._-]{3,64}$'
-          minLength: 3
-          maxLength: 64
-          example: user123
+          description: Sender display name.
+          minLength: 1
+          maxLength: 50
+          pattern: "^[A-Za-z0-9 _.-]{1,50}$"
         content:
           type: string
-          description: Message body content.
+          description: Message content.
           minLength: 1
-          maxLength: 4096
-          example: hey!
+          maxLength: 2000
         type:
           type: string
           description: Message type.
           enum: [text]
-          example: text
         status:
           type: string
-          description: Delivery or read status.
-          enum: [delivered]
-          example: delivered
+          description: Delivery status.
+          enum: [delivered, read]
         timestamp:
           type: string
           format: date-time
-          description: ISO 8601 timestamp when the message was created.
-          example: '2024-11-10T15:30:00Z'
-    SendMessageInput:
+          description: Message creation time (UTC).
+    SendMessageRequest:
       type: object
-      description: Payload to send a new message to a conversation.
-      required: [content]
+      description: Request body to create a message.
+      required: [content, type]
       properties:
         content:
           type: string
-          description: Message body to send.
+          description: Message content.
           minLength: 1
-          maxLength: 4096
-          example: hey!
+          maxLength: 2000
         type:
           type: string
-          description: Message type for the client. Only text is supported.
+          description: Message type.
           enum: [text]
-          example: text
+    Error:
+      type: object
+      description: Error payload.
+      required: [detail]
+      properties:
+        detail:
+          type: string
+          description: Human-readable error description.
+          minLength: 1
+          maxLength: 200
