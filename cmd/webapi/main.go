@@ -11,7 +11,6 @@ import (
 func main() {
 	rt := api.NewRouter()
 
-	// Allow the Vite dev server to call the API
 	cors := handlers.CORS(
 		handlers.AllowedOrigins([]string{"http://localhost:5173"}),
 		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
