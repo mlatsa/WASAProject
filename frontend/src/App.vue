@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 
-const api = import.meta.env.VITE_API_BASE
+const api = import.meta.env.VITE_API_BASE || 'http://localhost:3000'
 
 const name = ref('Alex')
 const identifier = ref('')
@@ -10,10 +10,15 @@ const content = ref('hey!')
 const out = ref('')
 
 async function call(path, opts={}) {
-  const r = await fetch(`${api}${path}`, opts)
-  const txt = await r.text()
-  try { out.value = JSON.stringify(JSON.parse(txt), null, 2) }
-  catch { out.value = txt }
+  out.value = '...loading'
+  try {
+    const r = await fetch(`${api}${path}`, opts)
+    const txt = await r.text()
+    try { out.value = JSON.stringify(JSON.parse(txt), null, 2) }
+    catch { out.value = txt }
+  } catch (e) {
+    out.value = String(e)
+  }
 }
 
 async function login () {
@@ -52,6 +57,7 @@ async function sendMsg () {
 <template>
   <main style="max-width:760px;margin:2rem auto;font-family:system-ui, sans-serif">
     <h1>WASAText (Frontend)</h1>
+    <p>API base: <code>{{ api }}</code></p>
 
     <section style="display:grid;gap:8px;grid-template-columns:1fr auto">
       <input v-model="name" placeholder="Name to login" />
@@ -67,8 +73,7 @@ async function sendMsg () {
       <button @click="sendMsg">POST /conversations/{id}/messages</button>
     </section>
 
-    <h3 style="margin-top:1.5rem">API base: {{ api }}</h3>
-    <pre style="background:#111;color:#0f0;padding:1rem;overflow:auto;min-height:180px">{{ out }}</pre>
+    <pre style="background:#111;color:#0f0;padding:1rem;overflow:auto;min-height:180px;margin-top:1rem">{{ out }}</pre>
   </main>
 </template>
 
