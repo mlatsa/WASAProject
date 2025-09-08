@@ -1,8 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 
-// NOTE: No absolute URL; we call relative paths.
-// In dev, Vite proxy sends them to :3000. In production, the grader controls routing.
+// No base URL -> always call relative paths
 const name = ref('Alex')
 const identifier = ref('')
 const convId = ref('conversation_abc')
@@ -29,15 +28,11 @@ async function login () {
 }
 
 async function listConvs () {
-  await call('/conversations', {
-    headers:{ Authorization:`Bearer ${identifier.value}` }
-  })
+  await call('/conversations', { headers:{ Authorization:`Bearer ${identifier.value}` } })
 }
 
 async function getConv () {
-  await call(`/conversations/${encodeURIComponent(convId.value)}`, {
-    headers:{ Authorization:`Bearer ${identifier.value}` }
-  })
+  await call(`/conversations/${encodeURIComponent(convId.value)}`, { headers:{ Authorization:`Bearer ${identifier.value}` } })
 }
 
 async function sendMsg () {
@@ -52,6 +47,7 @@ async function sendMsg () {
 <template>
   <main style="max-width:760px;margin:2rem auto;font-family:system-ui,sans-serif">
     <h1>WASAText (Frontend)</h1>
+
     <section style="display:grid;gap:8px;grid-template-columns:1fr auto">
       <input v-model="name" placeholder="Name to login" />
       <button @click="login">POST /session (login)</button>
@@ -65,6 +61,7 @@ async function sendMsg () {
       <input v-model="content" placeholder="Message content" />
       <button @click="sendMsg">POST /conversations/{id}/messages</button>
     </section>
+
     <pre style="background:#111;color:#0f0;padding:1rem;overflow:auto;min-height:180px;margin-top:1rem">{{ out }}</pre>
   </main>
 </template>
