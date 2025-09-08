@@ -1,8 +1,8 @@
 <script setup>
 import { ref } from 'vue'
 
-const api = import.meta.env.VITE_API_BASE || 'http://localhost:3000'
-
+// NOTE: No absolute URL; we call relative paths.
+// In dev, Vite proxy sends them to :3000. In production, the grader controls routing.
 const name = ref('Alex')
 const identifier = ref('')
 const convId = ref('conversation_abc')
@@ -12,13 +12,11 @@ const out = ref('')
 async function call(path, opts={}) {
   out.value = '...loading'
   try {
-    const r = await fetch(`${api}${path}`, opts)
+    const r = await fetch(path, opts)
     const txt = await r.text()
     try { out.value = JSON.stringify(JSON.parse(txt), null, 2) }
     catch { out.value = txt }
-  } catch (e) {
-    out.value = String(e)
-  }
+  } catch (e) { out.value = String(e) }
 }
 
 async function login () {
@@ -45,20 +43,15 @@ async function getConv () {
 async function sendMsg () {
   await call(`/conversations/${encodeURIComponent(convId.value)}/messages`, {
     method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      Authorization:`Bearer ${identifier.value}`
-    },
+    headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${identifier.value}` },
     body: JSON.stringify({ content: content.value, type: 'text' })
   })
 }
 </script>
 
 <template>
-  <main style="max-width:760px;margin:2rem auto;font-family:system-ui, sans-serif">
+  <main style="max-width:760px;margin:2rem auto;font-family:system-ui,sans-serif">
     <h1>WASAText (Frontend)</h1>
-    <p>API base: <code>{{ api }}</code></p>
-
     <section style="display:grid;gap:8px;grid-template-columns:1fr auto">
       <input v-model="name" placeholder="Name to login" />
       <button @click="login">POST /session (login)</button>
@@ -72,12 +65,6 @@ async function sendMsg () {
       <input v-model="content" placeholder="Message content" />
       <button @click="sendMsg">POST /conversations/{id}/messages</button>
     </section>
-
     <pre style="background:#111;color:#0f0;padding:1rem;overflow:auto;min-height:180px;margin-top:1rem">{{ out }}</pre>
   </main>
 </template>
-
-<style>
-button { padding: 8px 12px; cursor: pointer; }
-input  { padding: 8px 10px; }
-</style>

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/handlers"
-	"github.com/mlatsa/WASAProject/internal/service/api"
+	"github.com/mlatsa/WASAProject/service/api"
 )
 
 func main() {

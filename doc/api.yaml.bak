@@ -1,0 +1,353 @@
+openapi: 3.0.3
+info:
+  title: Messaging API
+  version: 0.1.0
+  description: Messaging API for WASAText providing login, conversations, messages, and health checks.
+servers:
+  - url: http://localhost:3000
+tags:
+  - name: health
+    description: Service health checks.
+  - name: auth
+    description: Authentication and session management.
+  - name: conversations
+    description: Conversation listing and retrieval.
+  - name: messages
+    description: Message creation within a conversation.
+security:
+  - bearerAuth: []
+paths:
+  /liveness:
+    get:
+      tags: [health]
+      summary: Liveness probe
+      description: Returns the current liveness state of the API.
+      operationId: getLiveness
+      responses:
+        "200":
+          description: Service is live.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    description: Liveness status.
+                    enum: [ok]
+  /session:
+    post:
+      tags: [auth]
+      summary: Create a session
+      description: Creates a new in-memory session for the provided user name and returns an identifier to be used as a Bearer token.
+      operationId: createSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "201":
+          description: Session created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /conversations:
+    get:
+      tags: [conversations]
+      summary: List conversations
+      description: Returns the list of conversations visible to the authenticated user.
+      operationId: listConversations
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Conversations retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [conversations]
+                properties:
+                  conversations:
+                    type: array
+                    description: Conversation summaries.
+                    minItems: 0
+                    maxItems: 200
+                    items:
+                      $ref: "#/components/schemas/ConversationSummary"
+        "401":
+          description: Missing or invalid Bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /conversations/{id}:
+    get:
+      tags: [conversations]
+      summary: Get a conversation
+      description: Returns a conversation with its messages.
+      operationId: getConversation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Conversation identifier.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+            pattern: "^[A-Za-z0-9_.-]{1,64}$"
+      responses:
+        "200":
+          description: Conversation retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [conversation]
+                properties:
+                  conversation:
+                    $ref: "#/components/schemas/Conversation"
+        "401":
+          description: Missing or invalid Bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Conversation not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /conversations/{id}/messages:
+    post:
+      tags: [messages]
+      summary: Send a message
+      description: Appends a new message to the given conversation.
+      operationId: sendMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Conversation identifier.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+            pattern: "^[A-Za-z0-9_.-]{1,64}$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageRequest"
+      responses:
+        "201":
+          description: Message created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: Invalid message body.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Missing or invalid Bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: UUID
+  schemas:
+    LoginRequest:
+      type: object
+      required: [name]
+      description: Request body for creating a session.
+      properties:
+        name:
+          type: string
+          description: Display name for the session.
+          minLength: 3
+          maxLength: 50
+          pattern: "^[A-Za-z0-9 _.-]{3,50}$"
+    LoginResponse:
+      type: object
+      required: [identifier, name]
+      description: Session creation response.
+      properties:
+        identifier:
+          type: string
+          description: Bearer token to be used in Authorization header.
+          minLength: 8
+          maxLength: 64
+          pattern: "^[A-Za-z0-9-]{8,64}$"
+        name:
+          type: string
+          description: Echoed display name.
+          minLength: 3
+          maxLength: 50
+          pattern: "^[A-Za-z0-9 _.-]{3,50}$"
+    ConversationSummary:
+      type: object
+      description: Summary of a conversation.
+      required: [id, participants, lastMessage, timestamp]
+      properties:
+        id:
+          type: string
+          description: Conversation identifier.
+          minLength: 1
+          maxLength: 64
+          pattern: "^[A-Za-z0-9_.-]{1,64}$"
+        participants:
+          type: array
+          description: User names participating in the conversation.
+          minItems: 1
+          maxItems: 50
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+            pattern: "^[A-Za-z0-9 _.-]{1,50}$"
+        lastMessage:
+          type: string
+          description: Last message preview.
+          minLength: 0
+          maxLength: 500
+        timestamp:
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC).
+        name:
+          type: string
+          description: Optional display name.
+          minLength: 0
+          maxLength: 100
+        photo:
+          type: string
+          description: Optional photo URL.
+          minLength: 0
+          maxLength: 200
+    Conversation:
+      type: object
+      description: Conversation with messages.
+      required: [id, participants, lastMessage, timestamp, messages]
+      properties:
+        id:
+          type: string
+          description: Conversation identifier.
+          minLength: 1
+          maxLength: 64
+          pattern: "^[A-Za-z0-9_.-]{1,64}$"
+        participants:
+          type: array
+          description: User names participating in the conversation.
+          minItems: 1
+          maxItems: 50
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+            pattern: "^[A-Za-z0-9 _.-]{1,50}$"
+        lastMessage:
+          type: string
+          description: Last message preview.
+          minLength: 0
+          maxLength: 500
+        timestamp:
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC).
+        messages:
+          type: array
+          description: Messages in the conversation ordered by time.
+          minItems: 0
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/Message"
+    Message:
+      type: object
+      description: A message within a conversation.
+      required: [messageId, conversationId, sender, content, type, status, timestamp]
+      properties:
+        messageId:
+          type: string
+          description: Server-generated message identifier (UUID).
+          minLength: 8
+          maxLength: 64
+          pattern: "^[A-Za-z0-9-]{8,64}$"
+        conversationId:
+          type: string
+          description: Conversation identifier.
+          minLength: 1
+          maxLength: 64
+          pattern: "^[A-Za-z0-9_.-]{1,64}$"
+        sender:
+          type: string
+          description: Sender display name.
+          minLength: 1
+          maxLength: 50
+          pattern: "^[A-Za-z0-9 _.-]{1,50}$"
+        content:
+          type: string
+          description: Message content.
+          minLength: 1
+          maxLength: 2000
+        type:
+          type: string
+          description: Message type.
+          enum: [text]
+        status:
+          type: string
+          description: Delivery status.
+          enum: [delivered, read]
+        timestamp:
+          type: string
+          format: date-time
+          description: Message creation time (UTC).
+    SendMessageRequest:
+      type: object
+      description: Request body to create a message.
+      required: [content, type]
+      properties:
+        content:
+          type: string
+          description: Message content.
+          minLength: 1
+          maxLength: 2000
+        type:
+          type: string
+          description: Message type.
+          enum: [text]
+    Error:
+      type: object
+      description: Error payload.
+      required: [detail]
+      properties:
+        detail:
+          type: string
+          description: Human-readable error description.
+          minLength: 1
+          maxLength: 200
