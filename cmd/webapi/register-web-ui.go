@@ -1,6 +1,6 @@
 //go:build webui
 
-package webapi
+package main
 
 import (
 	"fmt"
