@@ -1,10 +1,16 @@
 # syntax=docker/dockerfile:1
-FROM golang:1.21 AS build
+FROM golang:1.17 AS build
 WORKDIR /app
+
+# deps first (better cache)
 COPY go.mod go.sum ./
 RUN go mod download
+
+# project files
 COPY . .
-RUN go build -o /server ./cmd/webapi
+
+# build the backend wrapper (package main)
+RUN go build -o /server ./backend
 
 FROM debian:stable-slim
 WORKDIR /app
