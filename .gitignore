@@ -7,3 +7,9 @@ node_modules/
 dist/
 .coverage
 .pytest_cache/
+# build outputs
+/webapi
+/webapi17
+/bin/
+*.exe
+*.out
