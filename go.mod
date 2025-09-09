@@ -1,6 +1,6 @@
 module github.com/mlatsa/WASAProject
 
-go 1.19
+go 1.17
 
 replace github.com/mlatsa/WASAProject => /home/wasa/WASAProject
 

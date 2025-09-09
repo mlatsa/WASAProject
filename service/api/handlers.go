@@ -9,7 +9,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func writeJSON(w http.ResponseWriter, code int, v any) {
+func writeJSON(w http.ResponseWriter, code int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(v)
@@ -59,7 +59,7 @@ func (rt *Router) getMyConversations(w http.ResponseWriter, r *http.Request, _ h
 	for _, c := range conversations {
 		list = append(list, c)
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"conversations": list})
+	writeJSON(w, http.StatusOK, map[string]interface{}{"conversations": list})
 }
 
 // GET /conversations/:id
@@ -73,8 +73,8 @@ func (rt *Router) getConversation(w http.ResponseWriter, r *http.Request, ps htt
 	mu.Lock()
 	defer mu.Unlock()
 	c := ensureConversation(cid, users[user])
-	writeJSON(w, http.StatusOK, map[string]any{
-		"conversation": map[string]any{
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"conversation": map[string]interface{}{
 			"id":           c.ID,
 			"participants": c.Participants,
 			"lastMessage":  c.LastMessage,
