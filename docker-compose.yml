@@ -5,9 +5,12 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     ports:
-      - "8000:3000"   # host:container  -> backend reachable at http://localhost:8000
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/liveness"]
-      interval: 5s
-      timeout: 2s
-      retries: 10
+      - "8000:8000"
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend

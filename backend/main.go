@@ -1,7 +1,17 @@
 package main
 
-import "github.com/mlatsa/WASAProject/cmd/webapi"
+import (
+	"log"
+	"net/http"
+
+	"github.com/mlatsa/WASAProject/service/api"
+)
 
 func main() {
-	webapi.Main()
+	rt := api.NewRouter()
+	addr := ":3000"
+	log.Printf("listening on %s", addr)
+	if err := http.ListenAndServe(addr, rt.Handler()); err != nil {
+		log.Fatal(err)
+	}
 }
