@@ -2,8 +2,6 @@ module github.com/mlatsa/WASAProject
 
 go 1.17
 
-replace github.com/mlatsa/WASAProject => /home/wasa/WASAProject
-
 require (
 	github.com/ardanlabs/conf v1.5.0
 	github.com/gofrs/uuid v4.4.0+incompatible
