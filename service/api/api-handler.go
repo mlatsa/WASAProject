@@ -8,14 +8,16 @@ import (
 
 type Router struct {
 	router *httprouter.Router
+	store  *Store
 }
 
 func NewRouter() *Router {
-	r := &Router{router: httprouter.New()}
-	r.registerRoutes()
-	return r
+	rt := &Router{
+		router: httprouter.New(),
+		store:  newStore(),
+	}
+	rt.registerRoutes()
+	return rt
 }
 
-func (rt *Router) Handler() http.Handler {
-	return rt.router
-}
+func (rt *Router) Handler() http.Handler { return rt.router }
