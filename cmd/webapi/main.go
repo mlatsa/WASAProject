@@ -11,7 +11,8 @@ func main() {
 	rt := api.NewRouter()
 	addr := ":3000"
 	log.Printf("listening on %s\n", addr)
-	if err := http.ListenAndServe(addr, rt.Handler()); err != nil {
+	h := withCORS(rt.Handler())
+	if err := http.ListenAndServe(addr, h); err != nil {
 		log.Fatal(err)
 	}
 }

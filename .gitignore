@@ -13,3 +13,6 @@ dist/
 /bin/
 *.exe
 *.out
+*.tmp
+frontend@0.0.0
+vite
