@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "build-prod": "vite build",
-    "preview": "vite preview --port 8080 --strictPort"
+    "preview": "vite preview --port 5173"
   },
   "dependencies": {
     "vue": "^3.4.0",
@@ -18,3 +18,4 @@
     "vite": "^4.5.0"
   }
 }
+
