@@ -24,6 +24,8 @@ func main() {
 	r := &Router{mux: http.NewServeMux()}
 	r.registerAPI()
 	r.registerOpenAPIImpl()
+        r.registerButtonAPI()
+        r.registerChatAPI()
 	r.registerOpenAPICatchAll()
 	r.registerWebUI()
 
