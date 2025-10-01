@@ -5,12 +5,32 @@
     <section class="row">
       <input v-model="name" placeholder="Name to login" />
       <button @click="login">POST /session</button>
-      <button class="ghost" @click="health">GET /health</button>
+      <button class="ghost" @click="health">GET /healthz</button>
     </section>
 
     <section class="row">
       <label class="lbl">Identifier</label>
       <input v-model="token" placeholder="Bearer token from login" />
+    </section>
+
+    <section class="row">
+      <label class="lbl">Username</label>
+      <input v-model="username" placeholder="new username" />
+      <button @click="saveUsername">PUT /user/username</button>
+      <button class="ghost" @click="putPhoto">PUT /user/photo</button>
+    </section>
+
+    <section class="panel">
+      <h3>Group tools</h3>
+      <div class="row">
+        <button @click="addMember">POST /groups/{id}/members</button>
+        <button @click="leaveGroup">POST /groups/{id}/leave</button>
+      </div>
+      <div class="row">
+        <input v-model="groupName" placeholder="group name" />
+        <button @click="renameGroup">PUT /groups/{id}/name</button>
+        <button @click="setGroupPhoto">PUT /groups/{id}/photo</button>
+      </div>
     </section>
 
     <section class="panel">
@@ -19,9 +39,13 @@
         <button class="ghost small" @click="listConvs">Refresh</button>
       </div>
       <div class="list">
-        <button v-for="c in convs" :key="c.id"
-                :class="['conv', {active: c.id === convId}]"
-                @click="openConv(c.id)" :title="c.id">
+        <button
+          v-for="c in convs"
+          :key="c.id"
+          :class="['conv', { active: c.id === convId }]"
+          @click="openConv(c.id)"
+          :title="c.id"
+        >
           <div class="title">{{ c.id || 'unnamed' }}</div>
           <div class="preview">{{ c.lastMessage || '—' }}</div>
         </button>
@@ -39,10 +63,15 @@
       </div>
 
       <div class="messages">
-        <div v-if="(conversation?.messages||[]).length === 0" class="empty">No messages yet</div>
-        <div v-for="m in (conversation?.messages||[])" :key="m.messageId"
-             class="bubble" :class="{me: m.sender === name}"
-             @click="selectedId = m.messageId" :title="m.messageId">
+        <div v-if="(conversation?.messages || []).length === 0" class="empty">No messages yet</div>
+        <div
+          v-for="m in (conversation?.messages || [])"
+          :key="m.messageId"
+          class="bubble"
+          :class="{ me: m.sender === name }"
+          @click="selectedId = m.messageId"
+          :title="m.messageId"
+        >
           <div class="meta">
             <span class="sender">{{ m.sender }}</span>
             <span class="time">{{ new Date(m.timestamp).toLocaleTimeString() }}</span>
@@ -74,26 +103,6 @@
       </div>
     </section>
 
-    <section class="row">
-      <label class="lbl">Username</label>
-      <input v-model="username" placeholder="new username" />
-      <button @click="saveUsername">PUT /user/username</button>
-      <button class="ghost" @click="putPhoto">PUT /user/photo</button>
-    </section>
-
-    <section class="panel">
-      <h3>Group tools</h3>
-      <div class="row">
-        <button @click="addMember">POST /groups/{id}/members</button>
-        <button @click="leaveGroup">POST /groups/{id}/leave</button>
-      </div>
-      <div class="row">
-        <input v-model="groupName" placeholder="group name" />
-        <button @click="renameGroup">PUT /groups/{id}/name</button>
-        <button @click="setGroupPhoto">PUT /groups/{id}/photo</button>
-      </div>
-    </section>
-
     <section class="debug">
       <div class="status">{{ statusLine }}</div>
       <pre>{{ last }}</pre>
@@ -102,15 +111,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 
-/**
- * Build the API base at runtime without hardcoding localhost:
- *   http(s)://<same-host>:3000
- * This avoids literal "http://localhost" in source (grader rule) and also
- * works in Docker (frontend on 8080 → backend on 3000 with CORS).
- */
-const apiBase = `${window.location.protocol}//${window.location.hostname}:3000`
+// Build API base from Vite env (nginx proxy to backend), default to /api
+const API_BASE = (import.meta.env?.VITE_API_BASE_URL) || '/api'
 
 const name = ref('Alex')
 const token = ref('')
@@ -138,7 +142,7 @@ function hdr(extra = {}) {
 }
 
 async function call(path, init = {}, label = '') {
-  const url = new URL(path, apiBase).toString()
+  const url = `${API_BASE}${path}`
   const res = await fetch(url, init)
   const bodyText = await res.text()
   let data = bodyText
@@ -149,7 +153,7 @@ async function call(path, init = {}, label = '') {
 }
 
 async function health() {
-  await call('/health', {}, '/health')
+  await call('/healthz', {}, 'GET /healthz')
 }
 
 async function login() {
@@ -288,7 +292,7 @@ onMounted(() => {
 
 <style>
 * { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; }
+body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif; }
 .wrap { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
 h1 { margin: 0 0 1rem; }
 .row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
