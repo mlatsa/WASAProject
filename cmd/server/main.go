@@ -23,10 +23,10 @@ func main() {
 
 	r := &Router{mux: http.NewServeMux()}
 	r.registerAPI()
-	r.registerOpenAPIImpl()
-        r.registerButtonAPI()
-        r.registerChatAPI()
-	r.registerOpenAPICatchAll()
+	r.registerOpenAPIImpl()     // if you have this
+	r.registerButtonAPI()       // <-- ADD this line
+	r.registerChatAPI()         // <-- ADD this line
+	r.registerOpenAPICatchAll() // keep fallback AFTER specific handlers
 	r.registerWebUI()
 
 	addr := ":" + cfg.Port
