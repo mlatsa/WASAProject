@@ -9,11 +9,19 @@ RUN go mod download
 # project files
 COPY . .
 
-# build the backend wrapper (package main)
-RUN go build -o /server ./backend
+# build the actual server (your handlers are under cmd/server)
+# static linking for a tiny runtime image
+RUN CGO_ENABLED=0 GOOS=linux go build -o /server ./cmd/server
 
+# ---- runtime image ----
 FROM debian:stable-slim
 WORKDIR /app
+
+# copy the compiled binary
 COPY --from=build /server /server
+
+# listen on 3000 (matches nginx proxy + EXPOSE)
+ENV PORT=3000
 EXPOSE 3000
+
 CMD ["/server"]
