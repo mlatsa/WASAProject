@@ -6,6 +6,11 @@ import (
 	"strings"
 )
 
+// Used by PUT /api/groups/{id}/name
+type groupNameBody struct {
+	Name string `json:"name"`
+}
+
 // IMPORTANT: call r.registerButtonAPI() BEFORE the catch-all.
 func (rt *Router) registerButtonAPI() {
 	// /api/healthz -> same as /healthz, for frontend proxy convenience
@@ -51,12 +56,16 @@ func (rt *Router) registerButtonAPI() {
 			return
 		}
 		rest := strings.TrimPrefix(r.URL.Path, "/api/groups/")
-		parts := strings.Split(rest, "/") // want exactly 2 parts: [id, action]
+		parts := strings.Split(rest, "/") // expect exactly 2: [id, action]
 		if len(parts) != 2 {
 			http.NotFound(w, r)
 			return
 		}
-		action := parts[1]
+		id, action := parts[0], parts[1]
+		if id == "" {
+			http.NotFound(w, r)
+			return
+		}
 
 		switch action {
 		case "members":
@@ -78,6 +87,13 @@ func (rt *Router) registerButtonAPI() {
 		case "name":
 			if r.Method != http.MethodPut {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			defer r.Body.Close()
+			var body groupNameBody
+			_ = json.NewDecoder(r.Body).Decode(&body) // simple stub; ignore decode errors
+			if strings.TrimSpace(body.Name) == "" {
+				http.Error(w, "name required", http.StatusBadRequest)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
