@@ -22,11 +22,17 @@ func main() {
 	cfg := loadConfiguration()
 
 	r := &Router{mux: http.NewServeMux()}
-	r.registerAPI()
-	r.registerOpenAPIImpl()     // if you have this
-	r.registerButtonAPI()       // <-- ADD this line
-	r.registerChatAPI()         // <-- ADD this line
-	r.registerOpenAPICatchAll() // keep fallback AFTER specific handlers
+
+	// Register concrete APIs first
+	r.registerAPI()       // /healthz, /api/healthz, /api/version
+	r.registerButtonAPI() // /api/session, /api/user/*, /api/groups/*
+	r.registerChatAPI()   // /api/conversations/*, /api/messages/*
+
+	// Keep generic/catch-all AFTER specific handlers if you have them:
+	// r.registerOpenAPIImpl()
+	// r.registerOpenAPICatchAll()
+
+	// Static Web UI (serves built SPA from webui/dist)
 	r.registerWebUI()
 
 	addr := ":" + cfg.Port
