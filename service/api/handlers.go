@@ -34,8 +34,12 @@ func (rt *Router) health(w http.ResponseWriter, _ *http.Request, _ httprouter.Pa
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-type loginReq struct{ Name string `json:"name"` }
-type loginResp struct{ Identifier string `json:"identifier"` }
+type loginReq struct {
+	Name string `json:"name"`
+}
+type loginResp struct {
+	Identifier string `json:"identifier"`
+}
 
 func (rt *Router) doLogin(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var body loginReq
@@ -50,7 +54,9 @@ func (rt *Router) doLogin(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	writeJSON(w, http.StatusCreated, loginResp{Identifier: id})
 }
 
-type putUsernameBody struct{ Username string `json:"username"` }
+type putUsernameBody struct {
+	Username string `json:"username"`
+}
 
 func (rt *Router) putUserUsername(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	id := bearer(r)
@@ -114,7 +120,7 @@ func (rt *Router) getConversation(w http.ResponseWriter, r *http.Request, ps htt
 
 	// Create if missing (THIS is what ensures your chosen ID is used)
 	c := rt.ensureConversationLocked(convId, rt.usernameLocked(id))
-        c.ID = convId
+	c.ID = convId
 
 	// Respond
 	writeJSON(w, http.StatusOK, map[string]interface{}{
@@ -147,7 +153,7 @@ func (rt *Router) sendMessage(w http.ResponseWriter, r *http.Request, ps httprou
 
 	// Make sure the conversation with THIS ID exists
 	c := rt.ensureConversationLocked(convId, username)
-        c.ID = convId
+	c.ID = convId
 
 	// Create message bound to the *correct* convId
 	msgId := uuid.Must(uuid.NewV4()).String()
@@ -176,7 +182,9 @@ func (rt *Router) sendMessage(w http.ResponseWriter, r *http.Request, ps httprou
 	})
 }
 
-type forwardBody struct{ ConversationID string `json:"conversationId"` }
+type forwardBody struct {
+	ConversationID string `json:"conversationId"`
+}
 
 func (rt *Router) postMessageForward(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := bearer(r)
@@ -227,7 +235,9 @@ func (rt *Router) postMessageForward(w http.ResponseWriter, r *http.Request, ps 
 	})
 }
 
-type reactBody struct{ Emoji string `json:"emoji"` }
+type reactBody struct {
+	Emoji string `json:"emoji"`
+}
 
 func (rt *Router) postMessageReaction(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	_ = bearer(r) // keep simple
@@ -311,7 +321,9 @@ func (rt *Router) deleteMessage(w http.ResponseWriter, r *http.Request, ps httpr
 
 /* GROUP stubs for grader */
 
-type groupNameBody struct{ Name string `json:"name"` }
+type groupNameBody struct {
+	Name string `json:"name"`
+}
 
 func (rt *Router) postGroupMember(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.WriteHeader(http.StatusNoContent)

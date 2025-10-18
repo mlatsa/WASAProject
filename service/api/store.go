@@ -9,8 +9,8 @@ import (
 
 type Store struct {
 	mu            sync.Mutex
-	sessions      map[string]string       // token -> username
-	usernames     map[string]string       // token -> username override
+	sessions      map[string]string // token -> username
+	usernames     map[string]string // token -> username override
 	conversations map[string]*Conversation
 	messages      map[string]*Message
 }

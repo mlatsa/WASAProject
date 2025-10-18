@@ -1,6 +1,5 @@
 package api
 
-
 func (rt *Router) registerRoutes() {
 	r := rt.router
 
