@@ -18,22 +18,22 @@ func loadConfiguration() Config {
 	return Config{Port: port}
 }
 
+func (rt *Router) registerAPI() {
+	// base liveness on /healthz (mirrored by /api/healthz in button API)
+	rt.mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok"))
+	})
+}
+
 func main() {
 	cfg := loadConfiguration()
 
 	r := &Router{mux: http.NewServeMux()}
-
-	// Register concrete APIs first
-	r.registerAPI()       // /healthz, /api/healthz, /api/version
+	r.registerAPI()
 	r.registerButtonAPI() // /api/session, /api/user/*, /api/groups/*
 	r.registerChatAPI()   // /api/conversations/*, /api/messages/*
-
-	// Keep generic/catch-all AFTER specific handlers if you have them:
-	// r.registerOpenAPIImpl()
-	// r.registerOpenAPICatchAll()
-
-	// Static Web UI (serves built SPA from webui/dist)
-	r.registerWebUI()
+	r.registerWebUI()     // serve built SPA from webui/dist
 
 	addr := ":" + cfg.Port
 	log.Printf("listening on %s", addr)

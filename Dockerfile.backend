@@ -2,17 +2,12 @@
 FROM golang:1.17 AS build
 WORKDIR /app
 
-# cache deps
 COPY go.mod go.sum ./
 RUN go mod download
 
-# project files
 COPY . .
-
-# build the actual server from cmd/server
 RUN go build -o /server ./cmd/server
 
-# runtime
 FROM debian:stable-slim
 WORKDIR /app
 COPY --from=build /server /server

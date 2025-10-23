@@ -7,106 +7,115 @@ import (
 )
 
 type Message struct {
-	MessageID string            `json:"messageId"`
-	Sender    string            `json:"sender"`
-	Content   string            `json:"content"`
-	Type      string            `json:"type"`
-	Timestamp int64             `json:"timestamp"`
-	Reactions map[string]string `json:"reactions,omitempty"` // reactionId -> emoji
+	MessageID string   `json:"messageId"`
+	Sender    string   `json:"sender"`
+	Content   string   `json:"content"`
+	Type      string   `json:"type"`
+	Timestamp int64    `json:"timestamp"`
+	Reactions []string `json:"reactions,omitempty"`
 }
 
 type Conversation struct {
-	ID          string     `json:"id"`
-	Title       string     `json:"title,omitempty"`
-	Messages    []*Message `json:"messages,omitempty"`
-	LastMessage string     `json:"lastMessage,omitempty"`
+	ID          string    `json:"id"`
+	Title       string    `json:"title"`
+	Messages    []Message `json:"messages"`
+	LastMessage string    `json:"lastMessage,omitempty"`
 }
 
-type ChatStore struct {
-	mu        sync.Mutex
-	convs     map[string]*Conversation
-	nextMsgID int
-	nextReact int
+type store struct {
+	mu            sync.Mutex
+	conversations map[string]*Conversation
+	nextMsg       int
+	nextReact     int
 }
 
-func newChatStore() *ChatStore {
-	cs := &ChatStore{
-		convs:     make(map[string]*Conversation),
-		nextMsgID: 1,
+func newChatStore() *store {
+	return &store{
+		conversations: map[string]*Conversation{
+			"conversation_abc": {
+				ID:    "conversation_abc",
+				Title: "General",
+				Messages: []Message{
+					{MessageID: "m1", Sender: "System", Content: "Welcome to WASAText!", Type: "text", Timestamp: time.Now().UnixMilli()},
+				},
+				LastMessage: "Welcome to WASAText!",
+			},
+		},
+		nextMsg:   2,
 		nextReact: 1,
 	}
-	cs.convs["conversation_abc"] = &Conversation{
-		ID:    "conversation_abc",
-		Title: "General",
-	}
-	cs.addMessage("conversation_abc", "System", "Welcome to WASAText!", "text")
-	return cs
 }
 
-func (cs *ChatStore) listConversations() []*Conversation {
-	cs.mu.Lock()
-	defer cs.mu.Unlock()
-	out := make([]*Conversation, 0, len(cs.convs))
-	for _, c := range cs.convs {
-		if n := len(c.Messages); n > 0 {
-			c.LastMessage = c.Messages[n-1].Content
-		} else {
-			c.LastMessage = ""
-		}
-		out = append(out, &Conversation{ID: c.ID, Title: c.Title, LastMessage: c.LastMessage})
+func (s *store) listConversations() []map[string]string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := []map[string]string{}
+	for _, c := range s.conversations {
+		out = append(out, map[string]string{
+			"id":          c.ID,
+			"title":       c.Title,
+			"lastMessage": c.LastMessage,
+		})
 	}
 	return out
 }
 
-func (cs *ChatStore) getConversation(id string) (*Conversation, error) {
-	cs.mu.Lock()
-	defer cs.mu.Unlock()
-	c, ok := cs.convs[id]
+func (s *store) getConversation(id string) (*Conversation, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	c, ok := s.conversations[id]
 	if !ok {
 		return nil, errors.New("not found")
 	}
-	copyC := &Conversation{ID: c.ID, Title: c.Title, LastMessage: c.LastMessage}
-	copyC.Messages = append([]*Message(nil), c.Messages...)
-	return copyC, nil
+	cp := *c
+	return &cp, nil
 }
 
-func (cs *ChatStore) ensureConv(id string) *Conversation {
-	if c, ok := cs.convs[id]; ok {
-		return c
+func (s *store) addMessage(convID, sender, content, mtype string) Message {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	c, ok := s.conversations[convID]
+	if !ok {
+		c = &Conversation{ID: convID, Title: "New"}
+		s.conversations[convID] = c
 	}
-	c := &Conversation{ID: id, Title: id}
-	cs.convs[id] = c
-	return c
-}
-
-func (cs *ChatStore) addMessage(convID, sender, content, typ string) *Message {
-	cs.mu.Lock()
-	defer cs.mu.Unlock()
-	c := cs.ensureConv(convID)
-	id := cs.nextMsgID
-	cs.nextMsgID++
-	m := &Message{
-		MessageID: "m" + itoa(id),
+	id := "m" + itoa(s.nextMsg)
+	s.nextMsg++
+	msg := Message{
+		MessageID: id,
 		Sender:    sender,
 		Content:   content,
-		Type:      typ,
+		Type:      mtype,
 		Timestamp: time.Now().UnixMilli(),
-		Reactions: map[string]string{},
 	}
-	c.Messages = append(c.Messages, m)
+	c.Messages = append(c.Messages, msg)
 	c.LastMessage = content
-	return m
+	return msg
 }
 
-func (cs *ChatStore) deleteMessage(msgID string) bool {
-	cs.mu.Lock()
-	defer cs.mu.Unlock()
-	for _, c := range cs.convs {
-		for i, m := range c.Messages {
-			if m.MessageID == msgID {
+func (s *store) findMessage(messageID string) (*Message, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, c := range s.conversations {
+		for i := range c.Messages {
+			if c.Messages[i].MessageID == messageID {
+				m := c.Messages[i]
+				return &m, true
+			}
+		}
+	}
+	return nil, false
+}
+
+func (s *store) deleteMessage(messageID string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, c := range s.conversations {
+		for i := range c.Messages {
+			if c.Messages[i].MessageID == messageID {
 				c.Messages = append(c.Messages[:i], c.Messages[i+1:]...)
-				if n := len(c.Messages); n > 0 {
-					c.LastMessage = c.Messages[n-1].Content
+				if len(c.Messages) > 0 {
+					c.LastMessage = c.Messages[len(c.Messages)-1].Content
 				} else {
 					c.LastMessage = ""
 				}
@@ -117,47 +126,32 @@ func (cs *ChatStore) deleteMessage(msgID string) bool {
 	return false
 }
 
-func (cs *ChatStore) findMessage(msgID string) (*Message, bool) {
-	cs.mu.Lock()
-	defer cs.mu.Unlock()
-	for _, c := range cs.convs {
-		for _, m := range c.Messages {
-			if m.MessageID == msgID {
-				return m, true
-			}
-		}
-	}
-	return nil, false
-}
-
-func (cs *ChatStore) addReaction(msgID, emoji string) (string, bool) {
-	cs.mu.Lock()
-	defer cs.mu.Unlock()
-	for _, c := range cs.convs {
-		for _, m := range c.Messages {
-			if m.MessageID == msgID {
-				rid := "r" + itoa(cs.nextReact)
-				cs.nextReact++
-				if m.Reactions == nil {
-					m.Reactions = map[string]string{}
-				}
-				m.Reactions[rid] = emoji
-				return rid, true
+func (s *store) addReaction(messageID, emoji string) (string, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, c := range s.conversations {
+		for i := range c.Messages {
+			if c.Messages[i].MessageID == messageID {
+				id := "r" + itoa(s.nextReact)
+				s.nextReact++
+				c.Messages[i].Reactions = append(c.Messages[i].Reactions, emoji+":"+id)
+				return id, true
 			}
 		}
 	}
 	return "", false
 }
 
-func (cs *ChatStore) removeReaction(msgID, reactionID string) bool {
-	cs.mu.Lock()
-	defer cs.mu.Unlock()
-	for _, c := range cs.convs {
-		for _, m := range c.Messages {
-			if m.MessageID == msgID {
-				if m.Reactions != nil {
-					if _, ok := m.Reactions[reactionID]; ok {
-						delete(m.Reactions, reactionID)
+func (s *store) removeReaction(messageID, reactionID string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, c := range s.conversations {
+		for i := range c.Messages {
+			if c.Messages[i].MessageID == messageID {
+				rs := c.Messages[i].Reactions
+				for j := range rs {
+					if hasSuffix(rs[j], ":"+reactionID) {
+						c.Messages[i].Reactions = append(rs[:j], rs[j+1:]...)
 						return true
 					}
 				}
@@ -167,17 +161,28 @@ func (cs *ChatStore) removeReaction(msgID, reactionID string) bool {
 	return false
 }
 
-// minimal int->string helper to avoid extra imports
-func itoa(i int) string {
-	if i == 0 {
+func itoa(n int) string {
+	if n == 0 {
 		return "0"
 	}
-	buf := [20]byte{}
-	pos := len(buf)
-	for i > 0 {
-		pos--
-		buf[pos] = byte('0' + (i % 10))
-		i /= 10
+	sign := ""
+	if n < 0 {
+		sign = "-"
+		n = -n
 	}
-	return string(buf[pos:])
+	var b [20]byte
+	i := len(b)
+	for n > 0 {
+		i--
+		b[i] = byte('0' + n%10)
+		n /= 10
+	}
+	return sign + string(b[i:])
+}
+
+func hasSuffix(s, suf string) bool {
+	if len(suf) > len(s) {
+		return false
+	}
+	return s[len(s)-len(suf):] == suf
 }

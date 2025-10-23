@@ -9,7 +9,6 @@ import (
 
 var chatStore = newChatStore()
 
-// Register real chat endpoints consumed by the UI.
 func (rt *Router) registerChatAPI() {
 	// GET /api/conversations
 	rt.mux.HandleFunc("/api/conversations", func(w http.ResponseWriter, r *http.Request) {
@@ -23,7 +22,7 @@ func (rt *Router) registerChatAPI() {
 		})
 	})
 
-	// All ops under /api/conversations/{...}
+	// /api/conversations/{...}
 	rt.mux.HandleFunc("/api/conversations/", func(w http.ResponseWriter, r *http.Request) {
 		rest := strings.TrimPrefix(r.URL.Path, "/api/conversations/")
 		parts := strings.Split(rest, "/")
@@ -67,7 +66,7 @@ func (rt *Router) registerChatAPI() {
 		http.NotFound(w, r)
 	})
 
-	// All ops under /api/messages/{...}
+	// /api/messages/{...}
 	rt.mux.HandleFunc("/api/messages/", func(w http.ResponseWriter, r *http.Request) {
 		rest := strings.TrimPrefix(r.URL.Path, "/api/messages/")
 		parts := strings.Split(rest, "/")
