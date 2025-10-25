@@ -18,8 +18,8 @@ func loadConfiguration() Config {
 	return Config{Port: port}
 }
 
+// Base liveness probe at /healthz
 func (rt *Router) registerAPI() {
-	// base liveness on /healthz (mirrored by /api/healthz in button API)
 	rt.mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
@@ -30,10 +30,14 @@ func main() {
 	cfg := loadConfiguration()
 
 	r := &Router{mux: http.NewServeMux()}
-	r.registerAPI()
-	r.registerButtonAPI() // /api/session, /api/user/*, /api/groups/*
-	r.registerChatAPI()   // /api/conversations/*, /api/messages/*
-	r.registerWebUI()     // serve built SPA from webui/dist
+
+	// ---- ORDER MATTERS: specific -> catch-alls -> static UI ----
+	r.registerAPI()             // /healthz
+	r.registerButtonAPI()       // /api/session, /api/user/*, /api/groups/*
+	r.registerChatAPI()         // /api/conversations/*, /api/messages/*
+	r.registerOpenAPIImpl()     // /openapi.json, /openapi.yaml (if present)
+	r.registerOpenAPICatchAll() // remaining /api/* -> 501 not_implemented
+	r.registerWebUI()           // static SPA (/) LAST
 
 	addr := ":" + cfg.Port
 	log.Printf("listening on %s", addr)
