@@ -1,4 +1,8 @@
-.git
-node_modules
+# frontend build artifacts
 webui/node_modules
-dist
+webui/dist
+
+# VCS and OS trash
+.git
+.gitignore
+.DS_Store
