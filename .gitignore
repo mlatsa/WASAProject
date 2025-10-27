@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .venv/
 __pycache__/
 *.pyc
@@ -21,3 +22,21 @@ vite
 webui/.env*
 *.bak
 *.tmp
+=======
+# Node / frontend
+webui/node_modules/
+webui/dist/
+node_modules/
+dist/
+
+# Go binaries and caches
+server
+bin/
+*.exe
+*.out
+
+# Misc
+.DS_Store
+npm-debug.log*
+yarn-error.log*
+>>>>>>> 831a9f9 (Initial working Dockerized app: Go backend + Nginx proxy + SPA build)

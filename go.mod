@@ -1,6 +1,7 @@
 module github.com/mlatsa/WASAProject
 
 go 1.17
+<<<<<<< HEAD
 
 require (
 	github.com/ardanlabs/conf v1.5.0
@@ -11,3 +12,5 @@ require (
 )
 
 require golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
+=======
+>>>>>>> 831a9f9 (Initial working Dockerized app: Go backend + Nginx proxy + SPA build)
