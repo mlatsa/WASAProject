@@ -1,0 +1,26 @@
+name: build-frontend
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: webui/package-lock.json
+      - name: Install
+        working-directory: webui
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm i; fi
+      - name: Build
+        working-directory: webui
+        env:
+          VITE_API_URL: ""
+        run: npm run build
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: webui-dist
+          path: webui/dist

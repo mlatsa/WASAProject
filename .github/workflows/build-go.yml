@@ -1,0 +1,19 @@
+name: build-go
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+      - name: Tidy
+        working-directory: cmd/server
+        run: go mod tidy
+      - name: Build
+        working-directory: cmd/server
+        run: go build -v -o server .
+      - name: Smoke (version prints if you have it, else list)
+        working-directory: cmd/server
+        run: ls -l server
