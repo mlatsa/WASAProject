@@ -9,17 +9,20 @@ jobs:
   build-go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.sha }}   # <-- build the exact commit
+          ref: ${{ github.sha }}
 
       - uses: actions/setup-go@v5
         with:
           go-version: '1.17'
 
       - name: Show go.mod head (debug)
-        run: sed -n '1,40p' go.mod
+        run: |
+          git rev-parse HEAD
+          sed -n '1,40p' go.mod
 
       - name: Build Go backend
         run: go build -v -o server ./cmd/server
