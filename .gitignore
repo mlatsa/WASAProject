@@ -27,3 +27,10 @@ server
 
 # Binaries
 server
+# Build & deps
+node_modules/
+**/dist/
+**/*.bak.*
+**/*.conflict
+# Docker layer junk / scratch
+*.tmp
