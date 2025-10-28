@@ -40,3 +40,6 @@ bin/
 npm-debug.log*
 yarn-error.log*
 >>>>>>> 831a9f9 (Initial working Dockerized app: Go backend + Nginx proxy + SPA build)
+
+# Binaries
+server
