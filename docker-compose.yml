@@ -4,13 +4,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
+    container_name: backend
     ports:
-      - "8000:8000"
+      - "8080:8080"   # API → http://localhost:8080
+
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-    ports:
-      - "8080:80"
+    container_name: frontend
     depends_on:
       - backend
+    ports:
+      - "8081:80"     # Web → http://localhost:8081"

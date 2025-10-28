@@ -36,7 +36,6 @@ func main() {
 	r.registerButtonAPI()       // /api/session, /api/user/*, /api/groups/*
 	r.registerChatAPI()         // /api/conversations/*, /api/messages/*
 	r.registerOpenAPIImpl()     // /openapi.json, /openapi.yaml (if present)
-	r.registerOpenAPICatchAll() // remaining /api/* -> 501 not_implemented
 	r.registerWebUI()           // static SPA (/) LAST
 
 	addr := ":" + cfg.Port

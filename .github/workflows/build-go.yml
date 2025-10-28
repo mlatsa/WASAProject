@@ -1,0 +1,28 @@
+name: build-go
+on:
+  push:
+    branches: [ codex/build-new-vue-3-frontend-for-wasa-project ]
+  pull_request:
+    branches: [ codex/build-new-vue-3-frontend-for-wasa-project ]
+
+jobs:
+  build-go:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.17'
+
+      - name: Show go.mod head (debug)
+        run: |
+          git rev-parse HEAD
+          sed -n '1,40p' go.mod
+
+      - name: Build Go backend
+        run: go build -v -o server ./cmd/server
