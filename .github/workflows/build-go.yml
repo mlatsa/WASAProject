@@ -1,19 +1,25 @@
 name: build-go
-on: [push, pull_request]
+on:
+  push:
+    branches: [ codex/build-new-vue-3-frontend-for-wasa-project ]
+  pull_request:
+    branches: [ codex/build-new-vue-3-frontend-for-wasa-project ]
+
 jobs:
-  build:
+  build-go:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}   # <-- build the exact commit
+
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22.x'
-      - name: Tidy
-        working-directory: cmd/server
-        run: go mod tidy
-      - name: Build
-        working-directory: cmd/server
-        run: go build -v -o server .
-      - name: Smoke (version prints if you have it, else list)
-        working-directory: cmd/server
-        run: ls -l server
+          go-version: '1.17'
+
+      - name: Show go.mod head (debug)
+        run: sed -n '1,40p' go.mod
+
+      - name: Build Go backend
+        run: go build -v -o server ./cmd/server

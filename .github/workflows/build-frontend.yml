@@ -1,26 +1,32 @@
 name: build-frontend
-on: [push, pull_request]
+on:
+  push:
+    branches: [ codex/build-new-vue-3-frontend-for-wasa-project ]
+  pull_request:
+    branches: [ codex/build-new-vue-3-frontend-for-wasa-project ]
+
 jobs:
-  build:
+  build-frontend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}   # <-- build the exact commit
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: webui/package-lock.json
+
       - name: Install
-        working-directory: webui
         run: |
-          if [ -f package-lock.json ]; then npm ci; else npm i; fi
+          cd webui
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
       - name: Build
-        working-directory: webui
-        env:
-          VITE_API_URL: ""
-        run: npm run build
-      - name: Upload dist
-        uses: actions/upload-artifact@v4
-        with:
-          name: webui-dist
-          path: webui/dist
+        run: |
+          cd webui
+          npm run build
+
+      - name: List dist
+        run: ls -la webui/dist || true
