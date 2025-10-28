@@ -1,20 +1,27 @@
-PY=python
-PIP=pip
+.PHONY: up down logs rebuild test clean
 
-setup:
-	$(PY) -m venv .venv && . .venv/bin/activate && $(PIP) install -r backend/requirements.txt pytest
+up:
+	docker compose up -d --build
 
-run-backend:
-	uvicorn src.app:app --reload --port 8000 --app-dir backend
+down:
+	docker compose down -v
 
-run-frontend:
-	python -m http.server 5173 -d frontend/src
+logs:
+	docker compose logs -f --tail=100
+
+rebuild:
+	docker compose build --no-cache && docker compose up -d
 
 test:
-	pytest -q
+	@echo "Backend health:"; curl -s http://localhost:8080/healthz && echo
+	@echo "Frontend health:"; curl -s http://localhost:8081/healthz && echo
+	@echo "API smoke (create convo, send msg):"
+	@CID=chat_smoke; \
+	curl -s http://localhost:8080/api/conversations/$$CID > /dev/null; \
+	curl -s -X POST "http://localhost:8080/api/conversations/$$CID/messages" \
+	  -H "Authorization: Bearer bearer-demo-token" -H "Content-Type: application/json" \
+	  -d '{"content":"hello from Makefile smoke"}' | jq -r .id
 
-docker-backend:
-	docker build -f Dockerfile.backend -t wasa-backend:dev .
-
-docker-frontend:
-	docker build -f Dockerfile.frontend -t wasa-frontend:dev .
+clean:
+	docker compose down -v
+	docker system prune -f
