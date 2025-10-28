@@ -7,6 +7,7 @@ services:
     container_name: backend
     networks: [wasa-net]
     ports: ["8080:8080"]   # API → localhost:8080
+
   frontend:
     build:
       context: .
@@ -15,5 +16,6 @@ services:
     networks: [wasa-net]
     depends_on: [backend]
     ports: ["8081:80"]     # Web → localhost:8081
+
 networks:
   wasa-net: {}

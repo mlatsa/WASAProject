@@ -1,16 +1,16 @@
 .PHONY: up down logs rebuild test clean
 
 up:
-	docker compose up -d --build
+	@if docker compose version >/dev/null 2>&1; then docker compose up -d --build; else docker-compose up -d --build; fi
 
 down:
-	docker compose down -v
+	@if docker compose version >/dev/null 2>&1; then docker compose down -v; else docker-compose down -v; fi
 
 logs:
-	docker compose logs -f --tail=100
+	@if docker compose version >/dev/null 2>&1; then docker compose logs -f --tail=100; else docker-compose logs -f --tail=100; fi
 
 rebuild:
-	docker compose build --no-cache && docker compose up -d
+	@if docker compose version >/dev/null 2>&1; then docker compose build --no-cache && docker compose up -d; else docker-compose build --no-cache && docker-compose up -d; fi
 
 test:
 	@echo "Backend health:"; curl -s http://localhost:8080/healthz && echo
@@ -23,5 +23,5 @@ test:
 	  -d '{"content":"hello from Makefile smoke"}' | jq -r .id
 
 clean:
-	docker compose down -v
+	@if docker compose version >/dev/null 2>&1; then docker compose down -v; else docker-compose down -v; fi
 	docker system prune -f
