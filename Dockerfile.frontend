@@ -1,0 +1,19 @@
+FROM node:lts AS builder
+
+WORKDIR /app/webui
+
+COPY webui/package.json webui/yarn.lock ./
+
+COPY webui/ .
+
+RUN yarn run build-prod
+
+FROM nginx:stable
+
+RUN rm -rf /usr/share/nginx/html/*
+
+COPY --from=builder /app/webui/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
