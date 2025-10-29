@@ -52,7 +52,7 @@ async function fetchContacts() {
   loading.value = true
   errorMsg.value = null
   try {
-    const response = await axios.get(`/users/${userId}/contacts`)
+    const response = await axios.get(`/contacts`)
     contacts.value = response.data
   } catch (err) {
     errorMsg.value = err.response?.data?.error || err.toString()
@@ -61,9 +61,9 @@ async function fetchContacts() {
 }
 
 async function searchUsers() {
-  // Use GET /users?name=searchTerm to search for users
+  // Use GET /contacts?name=searchTerm to search for users
   try {
-    const response = await axios.get(`/users?name=${searchTerm.value}`)
+    const response = await axios.get(`/contacts?name=${searchTerm.value}`)
     searchedUsers.value = response.data
   } catch (err) {
     errorMsg.value = err.response?.data?.error || err.toString()
@@ -72,7 +72,7 @@ async function searchUsers() {
 
 async function add(contactId) {
   try {
-    await axios.post(`/users/${userId}/contacts`, { contactId })
+    await axios.post(`/contacts`, { contactId })
     await fetchContacts()
   } catch (err) {
     errorMsg.value = err.response?.data?.error || err.toString()
@@ -81,7 +81,7 @@ async function add(contactId) {
 
 async function remove(contactId) {
   try {
-    await axios.delete(`/users/${userId}/contacts/${contactId}`)
+    await axios.delete(`/contacts/${contactId}`)
     await fetchContacts()
   } catch (err) {
     errorMsg.value = err.response?.data?.error || err.toString()

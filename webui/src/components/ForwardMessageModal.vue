@@ -48,7 +48,7 @@
   async function fetchConversations() {
     try {
       // GET /users/:id/conversations
-      const response = await axios.get(`/users/${userId}/conversations`)
+      const response = await axios.get(`/conversations`)
       conversations.value = response.data
       if (conversations.value.length) {
         targetConversationId.value = conversations.value[0].id
