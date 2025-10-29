@@ -24,10 +24,20 @@ func MustProxy(prefix string) http.Handler {
 			trim = "/" + trim
 		}
 		r.URL.Path = trim
+		r.URL.RawPath = trim
 		r.Host = u.Host
 		if tok := os.Getenv("UPSTREAM_TOKEN"); tok != "" {
 			r.Header.Set("Authorization", "Bearer "+tok)
 		}
+	}
+	p.ModifyResponse = func(resp *http.Response) error {
+		h := resp.Header
+		h.Del("Access-Control-Allow-Origin")
+		h.Del("Access-Control-Allow-Methods")
+		h.Del("Access-Control-Allow-Headers")
+		h.Del("Access-Control-Expose-Headers")
+		h.Del("Access-Control-Allow-Credentials")
+		return nil
 	}
 	return p
 }
