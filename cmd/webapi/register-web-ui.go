@@ -4,7 +4,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/mlatsa/WASAProject/internal/webui"
+	"github.com/mlatsa/WASAProject/webui"
 	"io/fs"
 	"net/http"
 	"strings"

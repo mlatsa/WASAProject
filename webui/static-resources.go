@@ -1,9 +1,9 @@
-//go:build webui
+//go:build !webui
 
-// Package webui contains the web user interface for embedding
 package webui
 
 import "embed"
 
-//go:embed "dist/*"
+// Dist is empty when not embedding the built UI.
+// The web server can still run API-only in this mode.
 var Dist embed.FS

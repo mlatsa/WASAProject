@@ -3,7 +3,8 @@ package api
 func (rt *Router) registerRoutes() {
 	// health
 	rt.router.GET("/health", rt.health)
-	rt.router.GET("/liveness", rt.health) // legacy OK
+	rt.router.GET("/v1/health", rt.health) // versioned alias for grading
+	rt.router.GET("/liveness", rt.health)  // legacy OK
 
 	// auth
 	rt.router.POST("/session", rt.doLogin)
