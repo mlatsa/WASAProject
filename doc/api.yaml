@@ -1,0 +1,1001 @@
+openapi: 3.0.3
+info:
+  title: WASAText OpenAPI
+  description: API for WASAText
+  version: 1.0.0
+
+security:
+  - BearerAuth: [] 
+  
+tags:
+  - name: Auth
+    description: Endpoints for logging.
+  - name: Profile
+    description: Endpoints for managing user operations.
+  - name: Conversation
+    description: Endpoints for managing conversation operations.
+  - name: Message
+    description: Endpoints for managing message operations.
+  - name: Reaction
+    description: Endpoints for adding or removing reactions or comments on messages.
+  - name: Group
+    description: Endpoints for managing group operations.
+
+paths:
+  /login:
+    post:
+      tags:
+        - Auth
+      summary: Log in or create an account
+      description: |
+        Logs in the user. If the user doesn't exist, it will be created, and an identifier is returned.
+        If the user exists, the user identifier is returned.
+      operationId: doLogin
+      security: []
+      requestBody:
+        description: User detaills for login or creation.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Username'
+      responses:
+        '201':
+          description: User successfully logged in or created
+          content:
+            application/json:
+              schema:
+                type: object
+                description: User and auth token.
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+                    description: Bearer token (JWT) for authentication.
+                    pattern: ^.*?$
+                    minLength: 16
+                    maxLength: 4096
+        '400':
+          description: Bad request due to invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /searchby:
+    get:
+      tags:
+        - Profile
+        - Conversation
+      summary: Search for users or conversations
+      description: Searches for users or conversations based on a query string.
+      operationId: searchBy
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user
+          in: query
+          required: false 
+          schema:
+            type: string
+            description: Search query for users.
+            pattern: ^.*?$
+            minLength: 1
+            maxLength: 100
+        - name: conversation
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Search query for conversations.
+            pattern: ^.*?$
+            minLength: 1
+            maxLength: 100
+      responses:
+        '200':
+          description: Search results successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Object that contains search results.
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                    description: List of usernames matching the search query.
+                    minItems: 0
+                    maxItems: 1000
+                  conversations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Conversation'
+                    description: List of conversations matching the search query.
+                    minItems: 0
+                    maxItems: 1000
+        '400':
+          description: Bad request due to invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /user/username:
+    put:
+      tags:
+        - Profile
+      summary: Update the user's name
+      description: Allows user to set a new username
+      operationId: setMyUserName
+      security:
+        - BearerAuth: []
+      requestBody:
+        description: New username to set for the user.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Username'
+        required: true
+      responses:
+        '200':
+          description: Username updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Username taken or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /user/photo:
+    put:
+      tags:
+        - Profile
+      summary: Update user profile photo
+      description: Allows a user to set or update their profile photo.
+      operationId: setMyPhoto
+      security: 
+        - BearerAuth: []
+      requestBody:
+        description: Payload containing the new photo
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Photo'        
+      responses:
+        '200':
+          description: Profile photo updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Object that contains photo.
+                properties: 
+                  photo:
+                    type: string
+                    format: byte
+                    description: Base64-encoded string of the updated profile photo.
+                    pattern: ^.*?$
+                    minLength: 0
+                    maxLength: 10485760
+        '400':
+          description: Failed to update profile photo due to invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /conversations:
+    get:
+      tags:
+        - Conversation
+      summary: Retrieve user's conversations
+      description: Gets a list of conversations the user is part of
+      operationId: getMyConversations
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of user's conversations
+          content:
+            application/json:
+              schema:
+                description: Array of conversation objects representing the user's active and archived conversations.
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversation'
+                minItems: 0
+                maxItems: 100
+  
+  /conversations/{conversationId}:
+    get:
+      tags:
+        - Conversation
+      summary: Retrieve a specific conversation
+      description: Gets a list of all messages within a conversation, including text, photos, timestamps, and sender details.
+      operationId: getConversation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*?$
+            minLength: 1
+            maxLength: 36
+          description: Unique identifier for the conversation.
+      responses:
+        '200':
+          description: Conversation details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '400':
+          description: Invalid conversation ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /conversations/{conversationId}/messages:             
+    post:
+      tags:
+        - Message
+      summary: Sending a message
+      description: Sending a message in the specified chat.
+      operationId: sendMessage
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            description: Unique identifier for the conversation.
+            pattern: ^.*?$
+            minLength: 1
+            maxLength: 36
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+      responses:
+        '201':
+          description: Message successfully sent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: Message failed to send due to invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /conversations/{conversationId}/messages/{messageId}/forward:
+    post:
+      tags:
+        - Message
+      summary: Forward a message
+      description: Forwards an existing message to a specified conversation.
+      operationId: forwardMessage
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            description: Unique identifier for the conversation.
+            pattern: ^.*?$
+            minLength: 1
+            maxLength: 36
+        - name: messageId
+          in: path
+          required: true
+          description: Unique identifier for the message.
+          schema:
+            type: string
+            pattern: ^.*?$
+            minLength: 1
+            maxLength: 36
+      requestBody:
+        required: true
+        description: Object containing the ID of the target conversation where the message will be forwarded.
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Object containing the target conversation id.
+              required:
+                - targetConversationId
+              properties:
+                targetConversationId:
+                  type: string
+                  description: Unique identifier of the conversation to forward the message to.
+                  pattern: ^.*?$
+                  minLength: 1
+                  maxLength: 36
+      responses:
+        '201':
+          description: Message successfully forwarded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: Failed to forward the message due to invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /conversations/{conversationId}/messages/{messageId}:
+    delete:
+      tags:
+        - Message
+      summary: Delete a message
+      description: Deletes a specific message within a conversation.
+      operationId: deleteMessage
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            description: Unique identifier for the conversation.
+            pattern: ^.*?$
+            minLength: 1
+            maxLength: 36
+        - name: messageId
+          in: path
+          required: true
+          description: Unique identifier for the message.
+          schema:
+            type: string
+            pattern: ^.*?$
+            minLength: 1
+            maxLength: 36
+      responses:
+        '204':
+          description: Message deleted successfully.           
+        '400':
+          description: Failed to delete message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /conversations/{conversationId}/messages/{messageId}/status:
+    post:
+      tags:
+        - Message
+      summary: Update message delivery or read status
+      description: |
+        Updates the delivery or read status of a message for a specific user.
+      operationId: setMessageStatus
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*?$
+            minLength: 1
+            maxLength: 36
+          description: The ID of the conversation containing the message.
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*?$
+            minLength: 1
+            maxLength: 36
+          description: The ID of the message whose status is being updated.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Message status for the authenticated user.
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [delivered, read]
+                  description: The status to update for the authenticated user (must be either `delivered` or `read`).
+                  pattern: ^.*?$
+                  minLength: 4
+                  maxLength: 9
+      responses:
+        '204':
+          description: Status updated successfully (no content)
+        '400':
+          description: Invalid input (e.g., invalid status)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Message or user not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /conversations/{conversationId}/messages/{messageId}/comment:
+    parameters:
+      - name: conversationId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^.*?$
+          minLength: 1
+          maxLength: 36
+        description: Unique identifier for the conversation.
+      - name: messageId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^.*?$
+          minLength: 1
+          maxLength: 36
+        description: Unique identifier for the message.
+    post:
+      tags:
+        - Reaction
+      summary: Add a reaction to a specific message
+      description: Adds a reaction or comment to a specified message within a conversation.
+      operationId: commentMessage
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        description: Payload containing the reaction or comment to add to the message.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reaction'
+      responses:
+        '204':
+          description: Reaction added successfully     
+        '400':
+          description: Failed to add reaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Reaction
+      summary: Remove a reaction from a specific message
+      description: Removes a reaction or comment from a specified message within a conversation.
+      operationId: uncommentMessage
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Reaction removed successfully
+        '400':
+          description: Failed to remove the reaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /direct-conversations:
+    post:
+      tags:
+        - Conversation
+      summary: Ensure a direct conversation with a peer
+      description: Creates or returns an existing direct conversation between the authenticated user and the specified peer user.
+      operationId: createDirectConversation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Object containing the target peer user id.
+              required: [peerUserId]
+              properties:
+                peerUserId:
+                  type: string
+                  description: Unique identifier of the target user to start a direct conversation with.
+                  pattern: ^.*?$
+                  minLength: 1
+                  maxLength: 36
+      responses:
+        '201':
+          description: Direct conversation ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '400':
+          description: Invalid input
+                  
+
+  /groups:
+    post:
+      tags:
+        - Group 
+      summary: Create a group conversation
+      description: |
+        Creates a new conversation with type = "group" and adds the specified members (including the creator).
+        The returned object is a Conversation; the `conversationId` acts as the group id.
+      operationId: createGroup
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        description: Details required to create a group, including the group name and members.
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Object describing the group to create.
+              required: [groupName, members]
+              properties:
+                groupName:
+                  type: string
+                  description: Name of the group
+                  pattern: ^.*?$
+                  minLength: 3
+                  maxLength: 50
+                members:
+                  type: array
+                  description: Array of user IDs to include
+                  items:
+                    type: string
+                    description: Unique identifier for a user.
+                    pattern: ^.*?$
+                    minLength: 1
+                    maxLength: 36
+                  minItems: 1
+                  maxItems: 100
+                groupPhoto:
+                  type: string
+                  format: byte
+                  description: Optional base64-encoded image data
+                  pattern: ^.*?$
+                  minLength: 0
+                  maxLength: 10485760
+      responses:
+          '201':
+            description: Group conversation created successfully
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Conversation'
+          '400':
+            description: Failed to create group
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+
+  /groups/{groupId}:
+    post:
+      tags:
+        - Group
+      summary: Add a user to a group
+      description: Allows an existing group member to add a user to the group. Here `groupId` equals the `conversationId`.
+      operationId: addToGroup
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*?$
+            minLength: 1
+            maxLength: 36
+      requestBody:
+        required: true
+        description: The username of the user to be added to the group.
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Object containing the username to add.
+              required: [username]
+              properties:
+                username:
+                  $ref: '#/components/schemas/Username'
+      responses:
+        '204':
+          description: User successfully added to the group
+        '400':
+          description: Failed to add user to the group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Group
+      summary: User leaves a group
+      description: Allows a user to leave a specific group conversation. Here `groupId` equals the `conversationId`.
+      operationId: leaveGroup
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            description: Unique identifier for the group conversation.
+            pattern: ^.*?$
+            minLength: 1
+            maxLength: 36
+      responses:
+        '204':
+          description: User successfully removed from group
+        '400':
+          description: Failed to remove the user from the group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups/{groupId}/name:
+    put:
+      tags:
+        - Group 
+      summary: Update a group name
+      description: Updates the name of a specified group conversation (conversation type = group).
+      operationId: setGroupName
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*?$
+            minLength: 1
+            maxLength: 36
+      requestBody:
+        description: The new name for the group conversation.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Object containing the new group name.
+              required: [newName]
+              properties:
+                newName:
+                  type: string
+                  description: The new group name to set.
+                  pattern: ^.*?$
+                  minLength: 1
+                  maxLength: 50
+      responses:
+        '200':
+          description: Group name successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '400':
+          description: Failed to update group name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /groups/{groupId}/photo: 
+    put:
+      tags:
+        - Group 
+      summary: Update group photo
+      description: Updates the photo of a specified group conversation (conversation type = group).
+      operationId: setGroupPhoto
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*?$
+            minLength: 1
+            maxLength: 36
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Object containing the new group photo.
+              required: [groupPhoto]
+              properties:
+                groupPhoto:
+                  type: string
+                  format: byte
+                  description: Base64-encoded image data
+                  pattern: ^.*?$
+                  minLength: 0
+                  maxLength: 10485760
+      responses:
+        '200':
+          description: Group photo updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Object that contains message
+                required:
+                  - message
+                  - groupPhoto
+                properties:
+                  message:
+                    type: string
+                    description: Confirmation message
+                    pattern: ^.*?$
+                    minLength: 1
+                    maxLength: 100
+                  groupPhoto:
+                    type: string
+                    format: byte
+                    description: Base64-encoded image data
+                    pattern: ^.*?$
+                    minLength: 0
+                    maxLength: 10485760
+                  
+        '400':
+          description: Failed to update group photo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+       
+#...
+components:
+  securitySchemes:
+      BearerAuth:
+        type: http
+        scheme: bearer
+        bearerFormat: JWT
+        description: |
+          Use a valid JWT token in the Authorization header to access protected endpoints.
+
+  schemas:
+    User: 
+      type: object
+      description: Represents a user in the WASAText system.
+      required:
+        - id
+        - username
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the user.
+          pattern: ^.*?$
+          minLength: 1
+          maxLength: 36
+        username:
+          $ref: '#/components/schemas/Username'
+        profilePhoto:
+          type: string
+          format: byte
+          description: Base64-encoded image data
+          pattern: ^.*?$
+          minLength: 0
+          maxLength: 10485760
+    Username:
+      type: string
+      pattern: ^[a-zA-Z0-9_]+$
+      minLength: 3
+      maxLength: 16
+      description: A username containing only letters, numbers, or underscores, with a maximum length of 16 characters
+    Photo: 
+      type: string
+      format: byte
+      description: Base64-encoded image data
+      pattern: ^.*?$
+      minLength: 0
+      maxLength: 10485760
+    Conversation:
+      type: object
+      description: Represents a user's conversation.
+      properties:
+        conversationId:
+          type: string
+          description: Unique identifier for the conversation.
+          pattern: ^.*?$
+          minLength: 1
+          maxLength: 36
+        displayName:
+          type: string
+          description: Display name of the conversation (e.g., group name or other user's name).
+          pattern: ^.*?$
+          minLength: 1
+          maxLength: 100
+        type:
+          type: string
+          enum: [direct, group]
+          description: Indicates whether the conversation is a private chat or a group conversation.
+          pattern: ^.*?$
+          minLength: 5
+          maxLength: 6
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp of when the conversation was created.
+          pattern: ^.*?$
+          minLength: 20
+          maxLength: 30
+        members:
+          type: array
+          description: List of usernames in the conversation.
+          items:
+            $ref: '#/components/schemas/Username'
+          minItems: 2
+          maxItems: 100
+        groupPhoto:
+          type: string
+          format: byte
+          description: Base64-encoded image data
+          pattern: ^.*?$
+          minLength: 0
+          maxLength: 10485760
+        lastMessage:
+          $ref: '#/components/schemas/Message'
+        messages:
+          type: array
+          description: List of messages in the conversation.
+          items:
+            $ref: '#/components/schemas/Message'
+          minItems: 0
+          maxItems: 100
+    Message:
+      type: object
+      description: A message sent in a conversation.
+      required:
+        - id
+        - sender
+        - content
+        - timestamp
+        - message_status
+        - reaction
+        - attachments
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the message.
+          pattern: ^.*?$
+          minLength: 1
+          maxLength: 36
+        sender:
+          type: object
+          description: Information about the message sender.
+          required:
+            - id
+            - username
+          properties:
+            id:
+              type: string
+              description: Unique identifier of the sender.
+              pattern: ^.*?$
+              minLength: 1
+              maxLength: 36
+            username:
+              $ref: '#/components/schemas/Username'
+        content:
+          type: object
+          description: Content of the message.
+          required:
+            - type
+            - value
+          properties:
+            type: 
+              type: string
+              enum: ['text', 'photo']
+              description: Type of message (text or photo).
+              pattern: ^.*?$
+              minLength: 4
+              maxLength: 5
+            value:
+              type: string
+              description: Message text or photo.
+              pattern: ^.*?$
+              maxLength: 500
+              minLength: 1
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of when the message was sent.
+          pattern: ^.*?$
+          minLength: 20
+          maxLength: 30
+        message_status:
+          type: string
+          enum: ['sent', 'delivered', 'read']
+          description: Status of the message.
+          pattern: ^.*?$
+          minLength: 3
+          maxLength: 9
+        reaction:
+          type: array
+          description: Reactions to this message.
+          items:
+            $ref: '#/components/schemas/Reaction'
+          minItems: 0
+          maxItems: 100
+        attachments:
+          type: array
+          description: List of attachments.
+          items:
+            type: string
+            format: byte
+            description: Base64-encoded attachment content
+            pattern: ^.*?$
+            minLength: 0
+            maxLength: 10485760
+          minItems: 0
+          maxItems: 10
+        forwarded_from:
+          type: string
+          description: ID of the user this message was forwarded from.
+          pattern: ^.*?$
+          minLength: 1
+          maxLength: 36
+    Reaction:
+      type: object
+      description: A reaction to a message.
+      required:
+        - emoji
+      properties:
+        emoji:
+          type: string
+          description: Emoji used for the reaction.
+          pattern: ^.*?$
+          minLength: 1
+          maxLength: 10
+        username:
+          $ref: '#/components/schemas/Username'
+    Error:
+      type: object
+      description: Error response
+      properties:
+        error:
+          type: string
+          description: Error details about why the request failed
+          pattern: ^.*?$
+          minLength: 1
+          maxLength: 512
+  
