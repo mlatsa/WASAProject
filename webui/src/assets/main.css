@@ -1,0 +1,329 @@
+body {
+	display: block;
+    margin: 0px;
+	font-size: 1.2rem;
+	font-family: 'Noto Sans';
+	background-color: #d0d0d0;
+}
+
+input {
+	position: relative;
+	font-size: 1em;
+	margin-left: 0.7em;
+	width: 8em;
+}
+
+button {
+	position: relative;
+	height: 1.8em;
+	margin-left: 0.7em;
+	color: white;
+	background-color: #11d;
+	border: 1px solid  #008;
+	font-size: 1em;
+	padding: 0.3rem;
+	border-radius: 0.4rem;
+}
+
+label {
+	position: relative;
+	margin-left: 0.7em;
+	border:1px solid  #008;
+	padding: 0.3rem;
+	border-radius: 0.4rem;
+	font-weight: 500;
+	color:white
+}
+
+select {
+	position: relative;
+	margin-left: 0.7em;
+	font-size: 1em;
+	height: 1.6em;
+}
+
+.emoticon-button {
+	position: relative;
+	margin-left: 0em;
+    font-size: 1em;
+}
+
+.v-bar {
+	position: relative;
+	margin-left: 1em;
+	border-left: 0.1em solid #eee;
+	height: 100%;
+}
+
+.label-flat {
+	position: relative;
+	margin-left: 1em;
+	padding: 0.3rem;
+	font-weight: 500;
+	color:white
+}
+
+.label-button {
+	position: relative;
+	margin-left: 1em;
+	height: 1.8em;
+	color: white;
+	background-color: #11d;
+	border: 1px solid  #008;
+	font-size: 1em;
+	padding: 0.2rem;
+	border-radius: 0.4rem;
+}
+
+.photo-box {
+	position: relative;
+	margin-left: 1em;
+	top: 0.5em;
+	width: 3em;
+	height: 3em;
+}
+
+.photo-box-big {
+	position: relative;
+	margin-left: 1em;
+	top: 0.5em;
+	max-width: 18em;
+	max-height: 18em;
+}
+
+.name-box {
+	font-weight: normal;
+	position: absolute;
+	top: 1.6em;
+	margin-top: -1em;
+	left: 5em;
+	width: 11em;
+	height: 3em;
+	color: #009;
+}
+
+.group-flag-box {
+	font-weight: normal;
+	position: absolute;
+	top: 2.8em;
+	margin-top: -1em;
+	left: 5em;
+	width: 9em;
+	height: 3em;
+	color: #009;
+}
+
+.snippet-box {
+	font-weight: normal;
+	font-size: smaller;
+	position: absolute;
+	top: 3.4em;
+	margin-top: -1em;
+	left: 6em;
+	width: 11em;
+	height: 3em;
+	color: #555;
+}
+
+.login-container {
+	position: absolute;
+	width: 100%;
+	top: 3em;
+	height: 3em;
+	background-color: #009688;
+}
+
+.send-message-container {
+	position: absolute;
+	top: calc(100% - 3em - 2em);
+	left: 16em;
+	width: calc(100% - 16em);
+	height: 3em;
+	background-color: #a0a0a0;
+}
+
+.group-management-container {
+	position: absolute;
+	top: 6em;
+	width: 100%;
+	height: 9em;
+	background-color: #808080;
+}
+
+.new-conversation-container {
+	position: absolute;
+	top: 15em;
+	left: 0em;
+	width: 100%;
+	height: 3em;
+	background-color: #444;
+}
+
+.conversations-container {
+	position: absolute;
+	top: 18em;
+	width: 16em;
+	height: calc(100% - 18em);
+	background-color: #c0c0c0;
+	overflow-y: auto;
+}
+
+.conversation-container {
+	position: absolute;
+	top: 24em;
+	left: 16em;
+	width: calc(100% - 16em);
+	height: calc(100% - 24em);
+	background-color: #e5ddd5;
+	overflow-y: auto;
+}
+
+.message-container {
+	position: absolute;
+	top: 18em;
+	left: 16em;
+	width: calc(100% - 16em);
+	height: 6em;
+	background-color: #a0a0a0;
+}
+
+.alert-container {
+	position: absolute;
+	top: 0em;
+	height: 3em;
+	width: 100%;
+	background-color: #f8d7da;
+	text-align: center;
+	font-size: 1em;
+}
+
+.alert-danger {
+	z-index: 100;
+	color: #842029;
+}
+
+.alert-status {
+	background-color: #007677;
+	color: white;
+}
+
+.conv-box {
+	position: relative;
+	margin-top: 0em;
+	padding: 0em;
+	width: 100%;
+	height: 4em;
+	display:block;
+  	align-items:center;
+	cursor: pointer;
+	border-bottom: 1px solid #eee;
+	background-color: #d0e0e0;
+}
+
+.conv-box:hover {
+	background-color: #ddd;
+}
+
+.conv-box:focus {
+	background-color: #eee;
+}
+
+.message-box {
+	position:relative;
+	display: flex;
+	width: calc(100% - 2em);
+	margin: 0px 1em;
+	cursor: pointer;
+}
+
+.message-box:hover {
+    background-color: #ddd;
+}
+
+.message-box:focus {
+    background-color: #eee;
+}
+
+/*entrambi i riquadri*/
+.message-box p {
+	position:relative;
+	display: block;
+	right: 0em;
+	text-align: right;
+	max-width: 65%;
+	padding: 12px;
+	background: #dcf8ce;
+	border-radius: 10px;
+	font-size: 0.9em;
+}
+
+/*triangolo a destra*/
+.message-box.my-message p::before {
+	content : '';
+	position: absolute;
+	top: 0em;
+	right: -1em;
+	width: 20px;
+	height: 20px;
+	background: linear-gradient(135deg, #dcf8c6 0%, #dcf8c6 50%, transparent 50%, transparent);
+}
+
+.message-box p span {
+	display: block;
+	margin-top: 5px;
+	font-size: 0.8em;
+	opacity: 0.5;
+}
+
+.my-message {
+	justify-content: flex-end;
+}
+
+.friend-message p {
+	background: #fff;
+}
+
+.friend-message {
+	justify-content: flex-start;
+}
+
+/*triangolo a sinistra*/
+.message-box.friend-message::before {
+	content : '';
+	position: absolute;
+	top: 1em;
+	left: -1em;
+	width: 20px;
+	height: 20px;
+	background: linear-gradient(225deg, #fff 0%, #fff 50%, transparent 50%, transparent);  
+}
+
+.error-container {
+	z-index: 100;
+	position: absolute;
+	margin-left: calc(50% - 10em);
+	text-align: center;
+	/* min-width: 20em; */
+	max-width: 30em;
+	background-color: #fff;
+	border-radius: 2px;
+	-webkit-box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+	box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23);
+}
+
+.error-header {
+	text-align: center;
+	color: #b94242;
+}
+
+.error-button {
+	position: relative;
+	left: 1em;
+	/* min-width: 3em; */
+	font-size: 1em;
+	background-color: #d95555;
+	border-radius: 4px;
+	color: white;
+	padding: 0px 10px;
+}
+
