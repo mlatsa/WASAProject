@@ -11,9 +11,9 @@ import (
 	"syscall"
 
 	"github.com/ardanlabs/conf"
-	"github.com/femito1/WASA/service/api"
-	"github.com/femito1/WASA/service/database"
-	"github.com/femito1/WASA/service/globaltime"
+	"github.com/mlatsa/WASAProject/service/api"
+	"github.com/mlatsa/WASAProject/service/database"
+	"github.com/mlatsa/WASAProject/service/globaltime"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sirupsen/logrus"
 )

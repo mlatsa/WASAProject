@@ -1,94 +1,63 @@
-<!-- File: webui/src/views/ContactsView.vue -->
+<script setup>
+import { ref, onMounted } from 'vue'
+import axios from '../services/axios'
+import jwt_decode from 'jwt-decode'
+
+const contacts = ref([])
+const query = ref('')
+const errorMsg = ref(null)
+
+function myId(){
+  const uid = Number(localStorage.getItem('userId'))
+  if (uid) return uid
+  const t = localStorage.getItem('authToken') || localStorage.getItem('identifier')
+  try { return jwt_decode(t).user_id } catch { return null }
+}
+
+async function load(){
+  errorMsg.value = null
+  try{
+    const resp = await axios.get(`/users/${myId()}/contacts`)
+    contacts.value = resp.data || []
+  }catch(e){
+    contacts.value = []
+  }
+}
+
+async function add(){
+  errorMsg.value = null
+  try{
+    await axios.post(`/users/${myId()}/contacts`, { username: query.value.trim() })
+    query.value = ''
+    await load()
+  }catch(e){
+    errorMsg.value = 'Could not add'
+  }
+}
+
+async function remove(name){
+  try{
+    await axios.delete(`/users/${myId()}/contacts`, { data:{ username:name } })
+    await load()
+  }catch(e){}
+}
+
+onMounted(load)
+</script>
+
 <template>
-  <div class="container mt-3">
-    <h1>Your Contacts</h1>
-    <LoadingSpinner :loading="loading">
-      <div v-if="!loading">
-        <ul v-if="contacts.length" class="list-group">
-          <li v-for="contact in contacts" :key="contact.id" class="list-group-item">
-            {{ contact.username }}
-            <button class="btn btn-sm btn-danger float-end" @click="remove(contact.id)">Remove</button>
-          </li>
-        </ul>
-      </div>
-    </LoadingSpinner>
-    <ErrorMsg v-if="errorMsg" :msg="errorMsg" />
-    <div class="mt-3">
-      <button class="btn btn-primary" @click="searchUsers">Search and Add Contact</button>
+  <div class="p-6 max-w-3xl mx-auto">
+    <h1 class="text-3xl font-bold mb-4">Your Contacts</h1>
+    <div class="flex gap-2 mb-4">
+      <input v-model="query" class="border p-2 rounded flex-1" placeholder="username"/>
+      <button @click="add" class="bg-blue-600 text-white px-4 py-2 rounded">Add</button>
     </div>
-    <ul v-if="searchedUsers.length" class="list-group mt-2">
-      <li v-for="user in searchedUsers" :key="user.id" class="list-group-item">
-        {{ user.username }}
-        <button class="btn btn-sm btn-success float-end" @click="add(user.id)">Add Contact</button>
+    <p v-if="errorMsg" class="text-red-600">{{ errorMsg }}</p>
+    <ul class="space-y-2">
+      <li v-for="c in contacts" :key="c" class="flex justify-between border rounded p-2">
+        <span>{{ c }}</span>
+        <button @click="remove(c)" class="bg-red-600 text-white px-3 py-1 rounded">Remove</button>
       </li>
     </ul>
   </div>
 </template>
-
-<script setup>
-import { ref, onMounted } from 'vue'
-import axios from '../services/axios'
-import LoadingSpinner from '../components/LoadingSpinner.vue'
-import ErrorMsg from '../components/ErrorMsg.vue'
-import jwtDecode from 'jwt-decode'
-import { useRouter } from 'vue-router'
-
-const contacts = ref([])
-const loading = ref(false)
-const errorMsg = ref(null)
-const searchTerm = ref('')
-const searchedUsers = ref([])
-const router = useRouter()
-
-const token = localStorage.getItem('authToken')
-if (!token) {
-  router.push({ name: 'Login' })
-  throw new Error('No authentication token found.')
-}
-const decoded = jwtDecode(token)
-const userId = decoded.user_id
-
-async function fetchContacts() {
-  loading.value = true
-  errorMsg.value = null
-  try {
-    const response = await axios.get(`/users/${userId}/contacts`)
-    contacts.value = response.data
-  } catch (err) {
-    errorMsg.value = err.response?.data?.error || err.toString()
-  }
-  loading.value = false
-}
-
-async function searchUsers() {
-  // Use GET /users?name=searchTerm to search for users
-  try {
-    const response = await axios.get(`/users?name=${searchTerm.value}`)
-    searchedUsers.value = response.data
-  } catch (err) {
-    errorMsg.value = err.response?.data?.error || err.toString()
-  }
-}
-
-async function add(contactId) {
-  try {
-    await axios.post(`/users/${userId}/contacts`, { contactId })
-    await fetchContacts()
-  } catch (err) {
-    errorMsg.value = err.response?.data?.error || err.toString()
-  }
-}
-
-async function remove(contactId) {
-  try {
-    await axios.delete(`/users/${userId}/contacts/${contactId}`)
-    await fetchContacts()
-  } catch (err) {
-    errorMsg.value = err.response?.data?.error || err.toString()
-  }
-}
-
-onMounted(() => {
-  fetchContacts()
-})
-</script>

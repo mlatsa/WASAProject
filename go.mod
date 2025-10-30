@@ -1,4 +1,4 @@
-module github.com/femito1/WASA
+module github.com/mlatsa/WASAProject
 
 go 1.17
 

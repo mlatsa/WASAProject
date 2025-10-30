@@ -1,190 +1,84 @@
-<template>
-  <div class="container mt-3">
-    <h1>Your Conversations</h1>
-    <LoadingSpinner :loading="loading">
-      <div v-if="!loading">
-        <ul class="list-group">
-          <ConversationItem
-            v-for="conversation in conversations"
-            :key="conversation.id"
-            :conversation="conversation"
-            @open="openConversation"
-          />
-        </ul>
-      </div>
-    </LoadingSpinner>
-    <ErrorMsg v-if="errorMsg" :msg="errorMsg" />
-    <button class="btn btn-primary mt-3" @click="showNewConversationModal">New Conversation</button>
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import jwt_decode from 'jwt-decode'
+import axios from '../services/axios'
 
-    <div v-if="showModal" class="modal-overlay">
-      <div class="modal-content">
-        <h5>Start New Conversation</h5>
-        <div class="mb-3">
-          <label class="form-label">Select User:</label>
-          <select v-model="selectedUserId" class="form-select">
-            <option value="">Choose a user...</option>
-            <option v-for="u in users" :key="u.id" :value="u.id">
-              {{ u.username }}
-            </option>
-          </select>
-        </div>
-        <!-- Conversation Name Input -->
-        <div class="mb-3">
-          <label class="form-label">Conversation Name:</label>
-          <input 
-            v-model="conversationName" 
-            type="text" 
-            class="form-control" 
-            placeholder="Enter conversation name"
-          />
-        </div>
-        <div class="d-flex justify-content-end gap-2">
-          <button class="btn btn-secondary" @click="closeModal">Cancel</button>
-          <button class="btn btn-primary" @click="createConversation" :disabled="!selectedUserId || !conversationName">
-            Start Conversation
-          </button>
-        </div>
-      </div>
+const router = useRouter()
+const conversations = ref([])
+const participantInput = ref('')
+const chatName = ref('')
+const errorMsg = ref(null)
+
+function myId(){
+  const uid = Number(localStorage.getItem('userId'))
+  if (uid) return uid
+  const t = localStorage.getItem('authToken') || localStorage.getItem('identifier')
+  if (!t) return null
+  try { return jwt_decode(t).user_id } catch { return null }
+}
+
+async function loadConversations(){
+  errorMsg.value = null
+  const me = myId()
+  if (!me){ router.push({name:'Login'}); return }
+  try{
+    const resp = await axios.get(`/users/${me}/conversations`)
+    conversations.value = resp.data || []
+  }catch(e){
+    errorMsg.value = 'Failed to load conversations'
+  }
+}
+
+async function resolveUserId(input){
+  const n = Number(input)
+  if (!Number.isNaN(n) && n>0) return n
+  try{
+    await axios.post(`/users/${myId()}/contacts`, { username: input })
+  }catch(e){}
+  const users = await axios.get('/users')
+  const u = (users.data||[]).find(x => (x.username||'').toLowerCase() === String(input).toLowerCase())
+  return u ? u.id : null
+}
+
+async function createConversation(){
+  errorMsg.value = null
+  const me = myId()
+  if (!me){ router.push({name:'Login'}); return }
+  const other = await resolveUserId(participantInput.value.trim())
+  if (!other || other===me){ errorMsg.value='User not found'; return }
+  try{
+    const body = { members:[other], name: chatName.value||'' }
+    const resp = await axios.post(`/users/${me}/conversations`, body)
+    const conv = resp.data
+    router.push({ name:'Chat', params:{ convId: conv.id } })
+  }catch(e){
+    errorMsg.value = 'Could not create conversation'
+  }
+}
+
+function openConversation(conv){
+  router.push({ name:'Chat', params:{ convId: conv.id } })
+}
+
+onMounted(loadConversations)
+</script>
+
+<template>
+  <div class="p-6 max-w-3xl mx-auto space-y-4">
+    <h1 class="text-3xl font-bold">Chats</h1>
+    <div class="flex gap-2">
+      <input v-model="participantInput" class="border rounded p-2 flex-1" placeholder="Participant username or ID"/>
+      <input v-model="chatName" class="border rounded p-2 flex-1" placeholder="Chat name (optional)"/>
+      <button @click="createConversation" class="bg-blue-600 text-white px-4 py-2 rounded">Start chat</button>
+    </div>
+    <p v-if="errorMsg" class="text-red-600">{{ errorMsg }}</p>
+    <div class="mt-4 space-y-2">
+      <div v-if="(conversations||[]).length===0" class="border rounded p-3 text-gray-600">No conversations yet.</div>
+      <button v-for="c in conversations" :key="c.id" @click="openConversation(c)"
+              class="w-full text-left border rounded p-3 hover:bg-gray-50">
+        <div class="font-semibold">{{ c.name || ('Chat #'+c.id) }}</div>
+      </button>
     </div>
   </div>
 </template>
-
-<script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
-import axios from '../services/axios'
-import realtime from '../services/realtime'
-import LoadingSpinner from '../components/LoadingSpinner.vue'
-import ErrorMsg from '../components/ErrorMsg.vue'
-import ConversationItem from '../components/ConversationItem.vue'
-import jwtDecode from 'jwt-decode'
-
-const conversations = ref([])
-const users = ref([])
-const loading = ref(false)
-const errorMsg = ref(null)
-const showModal = ref(false)
-const selectedUserId = ref('')
-const conversationName = ref('')
-
-const router = useRouter()
-const token = localStorage.getItem('authToken')
-if (!token) {
-  router.push({ name: 'Login' })
-  throw new Error('No authentication token found.')
-}
-const decodedToken = jwtDecode(token)
-const userId = decodedToken.user_id
-
-async function fetchUsers() {
-  try {
-    const response = await axios.get(`/users`)
-    users.value = response.data
-  } catch (err) {
-    errorMsg.value = err.response?.data?.error || err.toString()
-  }
-}
-
-async function fetchConversations() {
-  loading.value = true
-  errorMsg.value = null
-  try {
-    const response = await axios.get(`/users/${userId}/conversations`)
-    conversations.value = response.data
-  } catch (err) {
-    errorMsg.value = err.response?.data?.error || err.toString()
-  }
-  loading.value = false
-}
-
-function showNewConversationModal() {
-  if (users.value.length === 0) {
-    errorMsg.value = "No users found"
-    return
-  }
-  showModal.value = true
-}
-
-function closeModal() {
-  showModal.value = false
-  selectedUserId.value = ""
-  conversationName.value = ""
-}
-
-async function createConversation() {
-  if (!selectedUserId.value) {
-    errorMsg.value = "Please select a user"
-    return
-  }
-  if (!conversationName.value) {
-    errorMsg.value = "Please enter a conversation name"
-    return
-  }
-  try {
-    const response = await axios.post(`/users/${userId}/conversations`, {
-      name: conversationName.value,
-      members: [selectedUserId.value]
-    })
-    closeModal()
-    await fetchConversations()
-    router.push({ name: 'Chat', params: { convId: response.data.id } })
-  } catch (err) {
-    if (err.response?.status === 403) {
-      errorMsg.value = "You can only start conversations with your contacts"
-    } else if (err.response?.status === 400) {
-      errorMsg.value = "Invalid request. Please check your input."
-    } else {
-      errorMsg.value = err.response?.data?.error || "Failed to create conversation"
-    }
-  }
-}
-
-function openConversation(conv) {
-  router.push({ name: 'Chat', params: { convId: conv.id } })
-}
-
-function handleRealtimeMessage(event) {
-  const data = JSON.parse(event.data)
-  if (data.type === "conversation_created") {
-    // If current user is a member, refresh conversations.
-    if (data.payload && data.payload.members) {
-      const isMember = data.payload.members.some(m => m.id === userId)
-      if (isMember) {
-        fetchConversations()
-      }
-    }
-  }
-}
-
-onMounted(() => {
-  fetchConversations()
-  fetchUsers()
-  realtime.addEventListener("message", handleRealtimeMessage)
-})
-
-onBeforeUnmount(() => {
-  realtime.removeEventListener("message", handleRealtimeMessage)
-})
-</script>
-
-<style scoped>
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-.modal-content {
-  background: white;
-  padding: 16px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 400px;
-}
-</style>

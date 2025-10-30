@@ -1,0 +1,94 @@
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import axios from '../services/axios'
+import jwtDecode from 'jwt-decode'
+
+const route = useRoute()
+const router = useRouter()
+
+const loading = ref(true)
+const errorMsg = ref(null)
+const convo = ref({ id: route.params.convId, name: '', participants: [], messages: [] })
+const newText = ref('')
+
+function getUserId() {
+  const t = localStorage.getItem('authToken')
+  if (!t) return null
+  try { return jwtDecode(t)?.sub || jwtDecode(t)?.user_id || jwtDecode(t)?.id || null } catch { return null }
+}
+
+async function loadConversation() {
+  loading.value = true
+  errorMsg.value = null
+  const uid = getUserId()
+  if (!uid) {
+    router.push({ name: 'Login' })
+    return
+  }
+  try {
+    // Try to load conv list and pick this one (API may not expose /conversations/:id)
+    const { data } = await axios.get(`/users/${uid}/conversations`)
+    const found = Array.isArray(data) ? data.find(c => String(c.id) === String(convo.value.id)) : null
+    convo.value = found || { id: route.params.convId, name: `Chat #${route.params.convId}`, participants: [], messages: [] }
+    // Load messages if endpoint exists; ignore failures
+    try {
+      const { data: msgs } = await axios.get(`/users/${uid}/conversations/${convo.value.id}/messages`)
+      if (Array.isArray(msgs)) convo.value.messages = msgs
+    } catch (_) {}
+  } catch (e) {
+    errorMsg.value = 'Failed to load conversation'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function sendMessage() {
+  const text = newText.value.trim()
+  if (!text) return
+  const uid = getUserId()
+  if (!uid) return
+  // Optimistic append so the UI never crashes
+  const local = { id: Date.now(), text, mine: true }
+  convo.value.messages = (convo.value.messages || []).concat([local])
+  newText.value = ''
+  try {
+    await axios.post(`/users/${uid}/conversations/${convo.value.id}/messages`, { text })
+  } catch (_) {
+    // revert on failure
+  }
+}
+
+onMounted(loadConversation)
+</script>
+
+<template>
+  <main class="container py-4">
+    <div v-if="errorMsg" class="alert alert-danger">{{ errorMsg }}</div>
+    <div v-else>
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h3 class="m-0">
+          {{ convo?.name || `Chat #${convo?.id || ''}` }}
+        </h3>
+      </div>
+
+      <div v-if="loading" class="text-muted">Loading…</div>
+
+      <div v-else class="border rounded p-3 mb-3" style="min-height: 300px;">
+        <div v-if="(convo?.messages || []).length === 0" class="text-muted">
+          No messages yet.
+        </div>
+        <div v-for="m in (convo?.messages || [])" :key="m.id" class="mb-2">
+          <strong v-if="m.mine">You:</strong>
+          <strong v-else>Them:</strong>
+          <span>{{ m.text }}</span>
+        </div>
+      </div>
+
+      <form class="d-flex gap-2" @submit.prevent="sendMessage">
+        <input v-model="newText" class="form-control" placeholder="Type a message…" />
+        <button class="btn btn-primary" type="submit">Send</button>
+      </form>
+    </div>
+  </main>
+</template>

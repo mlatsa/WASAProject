@@ -40,7 +40,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/femito1/WASA/service/database"
+	"github.com/mlatsa/WASAProjectProject/service/database"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 )

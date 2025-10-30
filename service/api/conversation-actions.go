@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/femito1/WASA/service/api/reqcontext"
-	"github.com/femito1/WASA/service/database"
+	"github.com/mlatsa/WASAProjectProject/service/api/reqcontext"
+	"github.com/mlatsa/WASAProjectProject/service/database"
 	"github.com/julienschmidt/httprouter"
 )
 

@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/femito1/WASA/service/database"
+	"github.com/mlatsa/WASAProjectProject/service/database"
 )
 
 type User struct {
