@@ -1,13 +1,17 @@
-class RT {
-  ws = null;
-  connect(url) {
-    try { this.ws?.close(); } catch {}
-    this.ws = new WebSocket(url);
-  }
-  disconnect() {
-    try { this.ws?.close(); } catch {}
-    this.ws = null;
-  }
-}
-const realtime = new RT();
-export default realtime;
+const token = localStorage.getItem("authToken");
+const wsUrl = typeof __WS_API_URL__ !== "undefined" ? __WS_API_URL__ : "ws://localhost:3000/ws";
+const socket = new WebSocket(wsUrl + "?token=" + token);
+
+socket.onopen = () => {
+  console.log("WebSocket connected");
+};
+
+socket.onclose = () => {
+  console.log("WebSocket disconnected");
+};
+
+socket.onerror = (error) => {
+  console.error("WebSocket error:", error);
+};
+
+export default socket;

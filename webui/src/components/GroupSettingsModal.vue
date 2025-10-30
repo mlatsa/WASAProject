@@ -90,10 +90,10 @@ async function updateConversation() {
   processing.value = true
   errorMsg.value = null
   try {
-    await axios.put(`/conversations/${convId}/name`, { newName: groupName.value })
+    await axios.put(`/users/${userId}/conversations/${convId}/name`, { newName: groupName.value })
     if (selectedFile.value) {
       const base64Data = await fileToBase64(selectedFile.value)
-      await axios.put(`/conversations/${convId}/photo`, { newPhoto: base64Data })
+      await axios.put(`/users/${userId}/conversations/${convId}/photo`, { newPhoto: base64Data })
     }
     emit("updated")
     close()
@@ -125,7 +125,7 @@ async function addMember() {
   addingMember.value = true
   errorMsg.value = null
   try {
-    await axios.post(`/conversations/${convId}/members`, { userIdToAdd: selectedUserId.value })
+    await axios.post(`/users/${userId}/conversations/${convId}/members`, { userIdToAdd: selectedUserId.value })
     emit("updated")
   } catch (err) {
     errorMsg.value = err.response?.data?.error || err.toString()
@@ -140,7 +140,7 @@ async function leaveConversation() {
   errorMsg.value = null
   
   try {
-    await axios.delete(`/conversations/${convId}/members`)
+    await axios.delete(`/users/${userId}/conversations/${convId}/members`)
     emit("updated")
     router.push('/chats') // Redirect to chat list after leaving
   } catch (err) {
