@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/mlatsa/WASAProjectProject/service/database"
+	"github.com/mlatsa/WASAProject/service/database"
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 	"github.com/sirupsen/logrus"
 )

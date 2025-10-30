@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/mlatsa/WASAProjectProject/service/api/reqcontext"
+	"github.com/mlatsa/WASAProject/service/api/reqcontext"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
