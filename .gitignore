@@ -4,3 +4,6 @@ webui/.yarn/
 webui/.pnp.cjs
 webui/.pnp.loader.mjs
 webui/.env.*
+node_modules/
+webui/node_modules/
+webui/.env.*
