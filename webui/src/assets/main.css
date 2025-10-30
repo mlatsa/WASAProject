@@ -1,3 +1,5 @@
+:root{--font-ui:"Noto Sans","Helvetica Neue",Arial,sans-serif;}
+*{font-family:var(--font-ui) !important;}
 body {
 	display: block;
     margin: 0px;
