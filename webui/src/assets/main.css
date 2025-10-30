@@ -130,7 +130,7 @@ select {
 	width: 100%;
 	top: 3em;
 	height: 3em;
-	background-color: #009688;
+	background-color: #0088cc;
 }
 
 .send-message-container {
@@ -203,7 +203,7 @@ select {
 }
 
 .alert-status {
-	background-color: #007677;
+	background-color: #229ED9;
 	color: white;
 }
 
@@ -244,7 +244,6 @@ select {
     background-color: #eee;
 }
 
-/*entrambi i riquadri*/
 .message-box p {
 	position:relative;
 	display: block;
@@ -257,7 +256,6 @@ select {
 	font-size: 0.9em;
 }
 
-/*triangolo a destra*/
 .message-box.my-message p::before {
 	content : '';
 	position: absolute;
@@ -287,7 +285,6 @@ select {
 	justify-content: flex-start;
 }
 
-/*triangolo a sinistra*/
 .message-box.friend-message::before {
 	content : '';
 	position: absolute;
@@ -303,7 +300,6 @@ select {
 	position: absolute;
 	margin-left: calc(50% - 10em);
 	text-align: center;
-	/* min-width: 20em; */
 	max-width: 30em;
 	background-color: #fff;
 	border-radius: 2px;
@@ -319,11 +315,9 @@ select {
 .error-button {
 	position: relative;
 	left: 1em;
-	/* min-width: 3em; */
 	font-size: 1em;
 	background-color: #d95555;
 	border-radius: 4px;
 	color: white;
 	padding: 0px 10px;
 }
-
