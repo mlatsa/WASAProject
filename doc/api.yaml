@@ -1,0 +1,609 @@
+openapi: 3.0.3
+info:
+  title: WasaText API specification
+  description: |-
+    This OpenAPI document describes the WasaText API.
+  version: "1"
+
+tags:
+  - name: Login
+  - name: User
+  - name: Conversation
+  - name: Message
+  - name: Group
+
+
+security:
+  - BearerAuth: []
+
+paths:
+  /session:
+    post:
+      tags:
+        - Login
+      summary: Logs in the user
+      description: |-
+        Logs in the user. If the user does not exist, it will be created.
+      operationId: doLogin
+      security:
+        - BasicAuth: []
+      requestBody:
+        description: User details
+        content:
+          application/json:
+            schema:
+              type: object
+              description: User name
+              properties:
+                name:
+                  type: string
+                  description: The user name
+                  example: Maria
+                  pattern: ^.*?$
+                  minLength: 3
+                  maxLength: 16
+        required: true
+      responses:
+        '200':
+          description: Log-in successful of an existing user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        '201':
+          description: Log-in successful for a new user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+
+
+  /user:
+    put:
+      tags:
+        - User
+      summary: Updates the user name
+      description: |-
+        Updates the user name
+      operationId: setMyUserName
+      requestBody:
+        description: User details
+        content:
+          application/json:
+            schema:
+              type: object
+              description: New user name
+              properties:
+                new_name:
+                  type: string
+                  description: the user name
+                  example: Maria
+                  pattern: ^.*?$
+                  minLength: 3
+                  maxLength: 16
+        required: true
+      responses:
+        '200':
+          description: User name updated successfully
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+
+
+  /users:
+    get:
+      tags:
+        - Users
+      description: |-
+        Return the list of all users.
+      operationId: getAllUsers
+      summary: Get the list of registered users
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                description: The list of users
+                type: array
+                minItems: 1
+                maxItems: 1000
+                items: { $ref: "#/components/schemas/User" }
+
+
+  /conversations:
+    get:
+      tags:
+        - Conversation
+      description: |-
+        Return the list of all conversations.
+      operationId: getMyConversations
+      summary: Get the list of conversations
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                description: The conversation
+                type: array
+                minItems: 1
+                maxItems: 1000
+                items: { $ref: "#/components/schemas/Conversation" }
+
+
+  /conversations/{conversation_id}:
+    parameters:
+      - name: conversation_id
+        in: path
+        required: true
+        description: The id of the conversation
+        schema:
+          type: integer
+          description: e.g. 123
+    get:
+      tags:
+        - Conversation
+      description: |-
+        Return the list of messages of a specific conversation
+      operationId: getConversation
+      summary: Get a specific conversation
+      responses:
+        "200":
+          description: The details of a conversation
+          content:
+            application/json:
+              schema:
+                description: The conversation
+                type: array
+                minItems: 1
+                maxItems: 1000
+                items: { $ref: "#/components/schemas/Conversation" }
+
+
+  /messages:
+    post:
+      tags:
+        - Message
+      summary: Send a message
+      description: |-
+        Send a message
+      operationId: sendMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: a message
+              type: object
+              properties:
+                to_user_name_or_group_name:
+                  type: string
+                  description: the name of the receiver user
+                  pattern: ^.*?$
+                  minLength: 3
+                  maxLength: 16
+                  example: "Davide"
+                is_group:
+                  type: boolean
+                  description: whether the to_user_name_or_group_name is a user name or a group name
+                  example: false
+                message:
+                  type: string
+                  description: the message
+                  pattern: ^.*?$
+                  minLength: 1
+                  maxLength: 1024
+                  example: "Hello, world!"
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Message" }
+
+
+  /messages/{msg_id}:
+    parameters:
+      - name: msg_id
+        in: path
+        required: true
+        description: The id of a message
+        schema:
+          type: integer
+          description: the id of the message 123
+    delete:
+      tags:
+        - Message
+      summary: Delete a message
+      description: |-
+        Delete a message
+      operationId: deleteMessage
+      responses:
+        '200':
+          description: Message deleted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Message" }
+    post:
+      tags:
+        - Message
+      summary: Forward a message
+      description: |-
+        Forward a message
+      operationId: forwardMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: a message
+              type: object
+              properties:
+                conversation_id:
+                  type: integer
+                  description: the id of the conversation
+                  example: 123
+                to_user_name_or_group_name:
+                  type: string
+                  description: the name of the receiver user or group
+                  pattern: ^.*?$
+                  minLength: 3
+                  maxLength: 16
+                  example: "Davide"
+                is_group:
+                  type: boolean
+                  description: whether the to_user_name_or_group_name is a user name or a group name
+                  example: false
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Message" }
+
+
+  /messages/{msg_id}/comments:
+    parameters:
+      - name: msg_id
+        in: path
+        required: true
+        description: The id of a message
+        schema:
+          type: integer
+          description: the id of the message, 1234
+    post:
+      tags:
+        - Message
+      summary: Comment a message
+      description: |-
+        Comment a message
+      operationId: commentMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: a message
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: the message
+                  pattern: ^.*?$
+                  minLength: 1
+                  maxLength: 1024
+                  example: ":)"
+      responses:
+        '201':
+          description: Comment added
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Comment" }
+    delete:
+      tags:
+        - Message
+      summary: Uncomment a message
+      description: |-
+        Uncomment a message
+      operationId: uncommentMessage
+      responses:
+        '204':
+          description: Comment removed successfully
+        '404':
+          description: Comment not found
+
+
+  /groups:
+    get:
+      tags:
+        - Group
+      description: |-
+        Return the list of groups that belongs to the logged user.
+      operationId: getMyGroups
+      summary: Get the list of groups that belongs to the logged user
+      responses:
+        "200":
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                description: The list of groups
+                type: array
+                minItems: 1
+                maxItems: 1000
+                items: { $ref: "#/components/schemas/Group" }
+
+
+  /groups/{group_id}:
+    parameters:
+      - name: group_id
+        in: path
+        required: true
+        description: group id
+        schema:
+          type: integer
+          description: Group id
+    get:
+      tags:
+        - Group
+      description: |-
+        Return the list of all members of the group
+      operationId: getAllMembers
+      summary: Get the list of members of the group
+      responses:
+        "200":
+          description: List of members
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Group" }
+    put:
+      tags:
+        - Group
+      summary: Add user to a group
+      description: |-
+        Add user to an existing or new group
+      operationId: addToGroup
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              description: user name and group
+              type: object
+              properties:
+                user_name_to_add:
+                  type: string
+                  description: the name of the user to add
+                  pattern: ^.*?$
+                  minLength: 3
+                  maxLength: 16
+                  example: "Davide"
+                group_name:
+                  type: string
+                  description: the name of group
+                  pattern: ^.*?$
+                  minLength: 3
+                  maxLength: 16
+                  example: "the best group"
+      responses:
+        '200':
+          description: User added to group
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Group" }
+
+    delete:
+      tags:
+        - Group
+      summary: Leave a group
+      description: |-
+        Leave a group
+      operationId: leaveGroup
+      responses:
+        '200':
+          description: Group successfully left
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Group" }
+
+    post:
+      tags:
+        - Group
+      summary: Set group name
+      description: |-
+        Set group name
+      operationId: setGroupName
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Group name
+              properties:
+                name:
+                  type: string
+                  description: the group's name
+                  pattern: ^.*?$
+                  minLength: 3
+                  maxLength: 16
+                  example: "WASA Group"
+      responses:
+        '200':
+          description: Group name updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Group" }
+
+
+  /user/photo:
+    put:
+      tags:
+        - User
+      summary: Updates the photo
+      description: |-
+        Updates photo
+      operationId: setMyPhoto
+      requestBody:
+        description: User photo
+        content:
+          application/json:
+            schema:
+              type: object
+              description: User photo
+              properties:
+                photo:
+                  type: object
+                  description: the profile photo
+        required: true
+      responses:
+        '200':
+          description: Image updated successfully
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "404": { description: User not found }
+
+
+  /group/photo:
+    put:
+      tags:
+        - Group
+      summary: Updates group photo
+      description: |-
+        Updates group photo
+      operationId: setGroupPhoto
+      requestBody:
+        description: Set group photo
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Group photo
+              properties:
+                group_id:
+                  type: integer
+                  description: the id of the group
+                  example: 123
+                photo:
+                  type: object
+                  description: the profile photo
+        required: true
+      responses:
+        '200':
+          description: Image updated successfully
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Group" }
+        "404":
+          description: Group not found
+
+
+components:
+  schemas:
+    User:
+      title: User
+      description: "Any user of WASAtext"
+      type: object
+      properties:
+        id:
+          description: Unique user identifier.
+          type: integer
+          example: 1234
+          readOnly: true
+        name:
+          description: "The user name"
+          type: string
+          example: Maria
+        photo:
+          type: object
+          description: user's photo
+
+    Conversation:
+      title: Conversation
+      description: "Any conversation of WASAtext"
+      type: object
+      properties:
+        id:
+          description: Unique conversation identifier.
+          type: integer
+          example: 1234
+          readOnly: true
+        name:
+          type: string
+          description: name
+        messages:
+          type: array
+          description: the messages in the conversation
+          minItems: 1
+          maxItems: 1000
+          items:
+            type: string
+
+    Message:
+      title: Message
+      description: "Any message in WASAtext"
+      type: object
+      properties:
+        id:
+          description: Unique message identifier.
+          type: integer
+          example: 1234
+          readOnly: true
+        name:
+          description: "The message"
+          type: string
+          example: Hello world!
+
+    Comment:
+      title: Comment
+      description: "Any comment in WASAtext"
+      type: object
+      properties:
+        id:
+          description: Unique comment identifier.
+          type: integer
+          example: 1234
+          readOnly: true
+        name:
+          description: "The comment"
+          type: string
+          example: Hello world!
+
+    Group:
+      title: Group
+      description: "Any group of WASAtext"
+      type: object
+      properties:
+        id:
+          description: Unique group identifier.
+          type: integer
+          example: 1234
+          readOnly: true
+        name:
+          type: string
+          description: the group's name
+        members:
+          type: array
+          description: number of members
+          minItems: 1
+          maxItems: 256
+          items:
+            type: integer
+        messages:
+          type: array
+          description: messages in the group
+          minItems: 1
+          maxItems: 1000
+          items:
+            type: string
+        photo:
+          description: photo
+          type: object
+
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+    BearerAuth:
+      type: http
+      scheme: bearer
