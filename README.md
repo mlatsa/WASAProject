@@ -1,31 +1,10 @@
 # WASA Project Starter
 
-This repository is a clean starter for the **WASA – Web and Software Architecture** homeworks.
+This repository is a clean starter for the WASA homeworks.
 
 It follows the delivery page requirements (single private repo, `doc/api.yaml`, default branch `main`, deploy key (read-only)).
 
-## Quickstart
-
-```bash
-# 1) Create a new private repo (GitHub or GitLab) and push this starter:
-git init
-git branch -M main
-git add .
-git commit -m "Init WASA starter"
-# then create a new empty private repo online and run:
-git remote add origin <YOUR_REMOTE_URL>
-git push -u origin main
-```
-
-### Add the Deploy Key (read‑only)
-1. Visit the WASA enroll dashboard and generate/copy your SSH public key.
-2. **GitHub:** Settings → *Deploy keys* → **Add key** (read‑only).
-   **GitLab:** Settings → *Repository* → *Deploy keys* → **Add key** (read‑only).
-3. Make sure your default branch is **main** (or **master**) — grading pulls from remote HEAD.
-
----
-
-## Project Layout
+Project Layout
 
 ```
 doc/
