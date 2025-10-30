@@ -1,18 +1,6 @@
-.venv/
-__pycache__/
-*.pyc
-.env
-.DS_Store
 node_modules/
-dist/
-.coverage
-.pytest_cache/
-# build outputs
-/webapi
-/webapi17
-/bin/
-*.exe
-*.out
-*.tmp
-frontend@0.0.0
-vite
+webui.tmp.*/
+webui/.yarn/
+webui/.pnp.cjs
+webui/.pnp.loader.mjs
+webui/.env.*
