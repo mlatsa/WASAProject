@@ -1,0 +1,42 @@
+<template>
+  <div class="container mt-5" style="max-width:560px">
+    <h1 class="mb-3">Login</h1>
+    <div class="mb-3">
+      <label class="form-label">Username:</label>
+      <input v-model="username" class="form-control" />
+    </div>
+    <button class="btn btn-primary" :disabled="loading" @click="login">Login</button>
+    <p v-if="errorMsg" class="alert alert-danger mt-3">{{ errorMsg }}</p>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import api from '../services/axios'
+
+const router = useRouter()
+const username = ref('')
+const loading = ref(false)
+const errorMsg = ref(null)
+
+async function login() {
+  loading.value = true
+  errorMsg.value = null
+  try {
+    const resp = await api.post('/session', { username: username.value })
+    const tok =
+      resp.data.token ||
+      resp.data.access_token ||
+      resp.data.jwt ||
+      resp.data.identifier ||
+      ''
+    localStorage.setItem('authToken', tok)
+    router.push({ name: 'ChatList' })
+  } catch (e) {
+    errorMsg.value = 'Login failed'
+  } finally {
+    loading.value = false
+  }
+}
+</script>

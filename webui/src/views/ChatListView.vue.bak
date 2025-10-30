@@ -1,0 +1,52 @@
+<template>
+  <div class="container mt-4">
+    <h2 class="mb-3">Chats</h2>
+    <div v-if="loading" class="text-muted">Loading…</div>
+    <div v-else-if="errorMsg" class="alert alert-danger">{{ errorMsg }}</div>
+    <ul class="list-group" v-else>
+      <li
+        v-for="c in chats"
+        :key="c.id"
+        class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+        @click="openConversation(c)"
+        style="cursor:pointer"
+      >
+        <span>{{ c.name || ('Chat #' + c.id) }}</span>
+        <span class="badge bg-secondary">{{ (c.messages && c.messages.length) || 0 }}</span>
+      </li>
+    </ul>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import api from '../services/axios'
+
+const router = useRouter()
+const chats = ref([])
+const loading = ref(true)
+const errorMsg = ref(null)
+
+function openConversation(conv) {
+  if (!conv) return
+  router.push({ name: 'Chat', params: { convId: conv.id } })
+}
+
+onMounted(async () => {
+  loading.value = true
+  errorMsg.value = null
+  try {
+    const resp = await api.get('/chats')
+    chats.value = resp.data || []
+  } catch (e) {
+    if (e?.response?.status === 401) {
+      router.push({ name: 'Login' })
+    } else {
+      errorMsg.value = 'Failed to load chats'
+    }
+  } finally {
+    loading.value = false
+  }
+})
+</script>
